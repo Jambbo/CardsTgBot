@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${HOST}/${POSTGRES_DB}
+  jpa:
+    hibernate:
+      ddl-auto: none
+  liquibase:
+    change-log: classpath:liquibase/db.changelog.yaml
+    enabled: true
+
+server:
+  port: 8082
+
+bot:
+  name: DurakDurakBot
+  token: 7202567611:AAF1NjsVrtcRBjFpaMssiapLaBix7cd0CeI
