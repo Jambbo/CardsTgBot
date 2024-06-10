@@ -2,3 +2,4 @@ databaseChangeLog:
   - includeAll:
       path: /changesets
       relativeToChangelogFile: true
+      schemaName: DurakSchema

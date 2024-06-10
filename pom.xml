@@ -22,6 +22,7 @@
         <lombok.version>1.18.32</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <liquibase.version>4.28.0</liquibase.version>
+        <preliquibase.version>1.4.0</preliquibase.version>
         <postgresql.version>42.7.3</postgresql.version>
     </properties>
 
@@ -66,6 +67,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <version>3.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.lbruun.springboot</groupId>
+            <artifactId>preliquibase-spring-boot-starter</artifactId>
+            <version>${preliquibase.version}</version>
         </dependency>
 
         <dependency>

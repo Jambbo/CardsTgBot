@@ -1,7 +1,7 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.client.CardsClient;
-import com.example.tgbotcardsonline.model.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import lombok.RequiredArgsConstructor;

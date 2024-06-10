@@ -1,4 +1,4 @@
-package com.example.tgbotcardsonline.model;
+package com.example.tgbotcardsonline.model.response;
 
 
 import jakarta.persistence.*;
@@ -18,7 +18,6 @@ public class DeckResponse {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private boolean success;
     private String deck_id;
     private boolean shuffled;

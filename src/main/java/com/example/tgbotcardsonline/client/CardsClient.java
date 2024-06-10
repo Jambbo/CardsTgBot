@@ -1,15 +1,13 @@
 package com.example.tgbotcardsonline.client;
 
-import com.example.tgbotcardsonline.model.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
 import lombok.RequiredArgsConstructor;
-import org.glassfish.jersey.uri.UriComponent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -26,6 +24,14 @@ public class CardsClient {
         RestTemplate restTemplate = new RestTemplate();
         URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/new/shuffle/")
                 .queryParam("cards", String.join(",", cards))
+                .build()
+                .toUri();
+
+        return restTemplate.getForEntity(uri, DeckResponse.class);
+    }
+    public ResponseEntity<DeckResponse> contactToDrawACard(Long deckId){
+        RestTemplate restTemplate = new RestTemplate();
+        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count=1")
                 .build()
                 .toUri();
 
