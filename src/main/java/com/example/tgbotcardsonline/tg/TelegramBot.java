@@ -6,12 +6,13 @@ import com.example.tgbotcardsonline.service.PlayerService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 @Slf4j
 @Component
@@ -41,8 +42,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         switch (messageText) {
             case "/start":
-                Player player = playerService.getByChatIdOrElseCreateNew(chatId,update.getMessage());
-                messageBuilder.text("Welcome!"+player.getUsername()+ "\n Let's play!.");
+                Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
+                messageBuilder.text("Welcome!" + player.getUsername() + "\n Let's play!.");
 
                 break;
             case "/aboba":
@@ -57,6 +58,20 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         SendMessage sendMessage = messageBuilder.build();
         execute(sendMessage);
+    }
+
+    @SneakyThrows
+    @Async
+    public void sendMessageToPlayer(Player player, String message) {
+        SendMessage sendMessage = SendMessage.builder()
+                .chatId(player.getChatId())
+                .build();
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            // Handle exception
+            e.printStackTrace();
+        }
     }
 
     @Override

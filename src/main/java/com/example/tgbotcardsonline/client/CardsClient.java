@@ -1,6 +1,7 @@
 package com.example.tgbotcardsonline.client;
 
 import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -29,12 +30,12 @@ public class CardsClient {
 
         return restTemplate.getForEntity(uri, DeckResponse.class);
     }
-    public ResponseEntity<DeckResponse> contactToDrawACard(Long deckId){
+    public ResponseEntity<DrawCardsResponse> contactToDrawACard(String deckId,int howMany){
         RestTemplate restTemplate = new RestTemplate();
-        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count=1")
+        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count="+howMany)
                 .build()
                 .toUri();
 
-        return restTemplate.getForEntity(uri, DeckResponse.class);
+        return restTemplate.getForEntity(uri, DrawCardsResponse.class);
     }
 }

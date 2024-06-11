@@ -5,12 +5,24 @@ spring:
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     url: jdbc:postgresql://${HOST}/${POSTGRES_DB}
+    driver-class-name: org.postgresql.Driver
+    dbcp2:
+      default-schema: DurakSchema
   jpa:
     hibernate:
       ddl-auto: none
   liquibase:
     change-log: classpath:liquibase/db.changelog.yaml
     enabled: true
+    default-schema: DurakSchema
+
+logging:
+  level:
+    org:
+      springframework: DEBUG
+      hibernate: DEBUG
+    liquibase: DEBUG
+
 
 server:
   port: 8082
