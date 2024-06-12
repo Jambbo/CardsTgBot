@@ -1,15 +1,14 @@
 package com.example.tgbotcardsonline.client;
 
-import com.example.tgbotcardsonline.model.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import lombok.RequiredArgsConstructor;
-import org.glassfish.jersey.uri.UriComponent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -30,5 +29,13 @@ public class CardsClient {
                 .toUri();
 
         return restTemplate.getForEntity(uri, DeckResponse.class);
+    }
+    public ResponseEntity<DrawCardsResponse> contactToDrawACard(String deckId,int howMany){
+        RestTemplate restTemplate = new RestTemplate();
+        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count="+howMany)
+                .build()
+                .toUri();
+
+        return restTemplate.getForEntity(uri, DrawCardsResponse.class);
     }
 }

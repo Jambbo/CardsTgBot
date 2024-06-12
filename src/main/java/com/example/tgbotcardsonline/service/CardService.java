@@ -2,6 +2,7 @@ package com.example.tgbotcardsonline.service;
 
 public interface CardService {
 
-    void brandNewDeck();
+    String brandNewDeck();
 
+    void drawACard(String deckId, int howMany);
 }
