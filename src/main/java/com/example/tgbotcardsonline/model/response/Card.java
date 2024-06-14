@@ -1,16 +1,49 @@
 package com.example.tgbotcardsonline.model.response;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import lombok.Data;
+import com.example.tgbotcardsonline.model.OnlinePlayer;
+import com.example.tgbotcardsonline.model.enums.Value;
+import com.example.tgbotcardsonline.model.enums.Suit;
+import jakarta.persistence.*;
+import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Data
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
 @Entity
+@Table(name = "card")
 public class Card {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @JsonProperty("code")
     private String code;
+    @JsonProperty("image")
     private String image;
-    private String suit;
-    private int value;
+    @Enumerated(EnumType.STRING)
+    @JsonProperty("value")
+    private Value value;
+    @Enumerated(EnumType.STRING)
+    @JsonProperty("suit")
+    private Suit suit;
+
+    public boolean isTrump(Suit trumpSuit) {
+        return this.suit == trumpSuit;
+    }
+
+    public Card(Suit suit, Value value){
+        this.suit = suit;
+        this.value = value;
+    }
+    @ManyToOne
+    @JoinTable(
+            name = "op_cards",
+            joinColumns =@JoinColumn(name = "card_id"),
+            inverseJoinColumns = @JoinColumn(name = "online_player_id")
+    )
+    public OnlinePlayer onlinePlayer;
+
 }

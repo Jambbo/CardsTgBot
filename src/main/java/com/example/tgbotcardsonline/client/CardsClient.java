@@ -2,8 +2,11 @@ package com.example.tgbotcardsonline.client;
 
 import com.example.tgbotcardsonline.model.response.DeckResponse;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -13,7 +16,13 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CardsClient {
+    private final RestTemplate restTemplate;
+    public CardsClient() {
+        this.restTemplate = new RestTemplate();
+        this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+    }
 
     public ResponseEntity<DeckResponse> contactToPartialDeck(){
         List<String> cards = List.of(
@@ -22,7 +31,7 @@ public class CardsClient {
                 "6C", "7C", "8C", "9C", "0C", "JC", "QC", "KC", "AC",
                 "6H", "7H", "8H", "9H", "0H", "JH", "QH", "KH", "AH"
         );
-        RestTemplate restTemplate = new RestTemplate();
+
         URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/new/shuffle/")
                 .queryParam("cards", String.join(",", cards))
                 .build()
@@ -30,12 +39,21 @@ public class CardsClient {
 
         return restTemplate.getForEntity(uri, DeckResponse.class);
     }
-    public ResponseEntity<DrawCardsResponse> contactToDrawACard(String deckId,int howMany){
+    public DrawCardsResponse contactToDrawACard(String deckId,int howMany){
         RestTemplate restTemplate = new RestTemplate();
         URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count="+howMany)
                 .build()
                 .toUri();
-
-        return restTemplate.getForEntity(uri, DrawCardsResponse.class);
+        try {
+            DrawCardsResponse response = restTemplate.getForObject(uri, DrawCardsResponse.class);
+            log.info("Response received: {}", new ObjectMapper().writeValueAsString(response));
+            if (response == null || !response.isSuccess()) {
+                throw new RuntimeException("Failed to draw cards: response is null or not successful");
+            }
+            return response;
+        } catch (Exception e) {
+            log.error("Failed to draw cards from deck {}: {}", deckId, e.getMessage());
+            throw new RuntimeException("Failed to draw cards: " + e.getLocalizedMessage(), e);
+        }
     }
 }

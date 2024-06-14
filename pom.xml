@@ -24,6 +24,8 @@
         <liquibase.version>4.28.0</liquibase.version>
         <preliquibase.version>1.4.0</preliquibase.version>
         <postgresql.version>42.7.3</postgresql.version>
+        <spring-kafka.version>3.1.3</spring-kafka.version>
+        <reactor-kafka.version>1.3.23</reactor-kafka.version>
     </properties>
 
     <dependencies>
@@ -50,6 +52,7 @@
             <artifactId>telegrambots</artifactId>
             <version>${telegrambots.version}</version>
         </dependency>
+
 
         <dependency>
             <groupId>org.mapstruct</groupId>

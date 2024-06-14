@@ -7,6 +7,7 @@ import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,7 +19,6 @@ public class SearchRequestImpl implements SearchRequestService {
     private final SearchRequestRepository searchRequestRepository;
     private final GameService gameService;
     private final TelegramBot telegramBot;
-
     @Override
     public void StartLookForRandomGame(Player player) {
         if (player.isInGame()) {
@@ -35,7 +35,13 @@ public class SearchRequestImpl implements SearchRequestService {
             searchRequestRepository.save(newSearchRequest);
             telegramBot.sendMessageToPlayer(player, "looking for a game!");
         } else {
-            gameService.createGame(player, searchRequest.get().getSearcher());
+            Player opponent = searchRequest.get().getSearcher();
+            gameService.createGame(player, opponent);
+            // Notify players about the game
+            telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
+            telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
+            searchRequestRepository.delete(searchRequest.get());
+
         }
     }
 

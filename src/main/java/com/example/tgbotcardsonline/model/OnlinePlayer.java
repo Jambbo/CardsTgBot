@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
-@Table(name = "OnlinePlayer")
+@Table(name = "online_player")
 public class OnlinePlayer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,9 +21,18 @@ public class OnlinePlayer {
     @JoinColumn(name = "player_id")
     private Player player;
     @ManyToOne
-    @JoinColumn(name = "game_id")
+    @JoinTable(
+            name = "game_players",
+            joinColumns = @JoinColumn(name = "player_id"),
+            inverseJoinColumns = @JoinColumn(name = "game_id")
+    )
     private Game game;
     // Вот тут что-то нихуя не уверен, чекни может оно нахуй не нужно
     @OneToMany
+    @JoinTable(
+            name = "op_cards",
+            joinColumns =@JoinColumn(name = "online_player_id"),
+            inverseJoinColumns = @JoinColumn(name = "card_id")
+    )
     private List<Card> cards;
 }

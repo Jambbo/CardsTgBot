@@ -1,8 +1,11 @@
 package com.example.tgbotcardsonline.service;
 
+import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
+
 public interface CardService {
 
     String brandNewDeck();
 
-    void drawACard(String deckId, int howMany);
+    DrawCardsResponse drawACard(String deckId, int howMany);
+
 }

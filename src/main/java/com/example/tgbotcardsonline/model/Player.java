@@ -1,9 +1,11 @@
 package com.example.tgbotcardsonline.model;
 
+import com.example.tgbotcardsonline.model.response.Card;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @AllArgsConstructor

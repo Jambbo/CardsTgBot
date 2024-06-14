@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class PlayerServiceImpl implements PlayerService {
-    private PlayerRepository playerRepository;
+    private final PlayerRepository playerRepository;
 
     @Override
     public Player getByChatIdOrElseCreateNew(Long chatId, Message message) {

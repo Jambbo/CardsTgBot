@@ -27,8 +27,11 @@ public class CardServiceImpl implements CardService {
         return deckResponse.getDeck_id();
     }
     @Override
-    // БЛЯ меня уже плавит нахуй давай сам как-то доделаешь
-    public void drawACard(String deckId,int howMany){
-        ResponseEntity<DrawCardsResponse> drawCardsResponseResponseEntity = cardsClient.contactToDrawACard(deckId,howMany);
+    public DrawCardsResponse drawACard(String deckId,int howMany){
+        try {
+            return cardsClient.contactToDrawACard(deckId, howMany);
+        } catch (Exception e) {
+            throw new RuntimeException("Error drawing cards: " + e.getMessage(), e);
+        }
     }
 }

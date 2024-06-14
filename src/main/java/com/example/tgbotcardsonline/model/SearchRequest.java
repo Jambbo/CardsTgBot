@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @Builder
-@Table(name = "Search_Request")
+@Table(name = "search_request")
 public class SearchRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,5 +21,7 @@ public class SearchRequest {
     @JoinColumn(name = "searcher_id")
     private Player searcher;
     private LocalDateTime createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "game_type")
     private GameType gameType;
 }
