@@ -1,6 +1,7 @@
 package com.example.tgbotcardsonline.tg;
 
 import com.example.tgbotcardsonline.model.Player;
+import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.PlayerService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
@@ -16,7 +17,12 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Objects.isNull;
 
@@ -48,7 +54,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 .chatId(chatId.toString());
 
         Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
-        switch (messageText) {
+
+        if (player.isInGame()){
+            getMessageProcessor().handleGameOperation(messageText, player); // process game
+            return;
+        }
+
+        switch (messageText) { // process commands
             case "/start":
                 messageBuilder.text("Welcome! " + player.getUsername() + "\n Let's play!");
 
@@ -60,14 +72,14 @@ public class TelegramBot extends TelegramLongPollingBot {
                 getSearchRequestService().StartLookForRandomGame(player);
                 break;
             default:
-                getMessageProcessor().handle(messageText, player);
+
                 messageBuilder.text("You sent: " + messageText);
 
                 break;
         }
 
         SendMessage sendMessage = messageBuilder.build();
-        if(!isNull(sendMessage)){
+        if (!isNull(sendMessage)) {
             execute(sendMessage);
         }
 
@@ -87,10 +99,39 @@ public class TelegramBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+    public void showAvailableCards(long chatId, List<Card> cards) {
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText("Choose a card:");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (Card card : cards) {
+            String cardCode = card.getCode();
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(cardCode); // TODO handle to show suits of card by symbols
+            button.setCallbackData(cardCode);
+
+            List<InlineKeyboardButton> row = new ArrayList<>();
+            row.add(button);
+            rows.add(row);
+        }
+
+        markup.setKeyboard(rows);
+        message.setReplyMarkup(markup);
+
+        try {
+            execute(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private SearchRequestService getSearchRequestService() {
         return applicationContext.getBean(SearchRequestService.class);
     }
+
     private MessageProcessor getMessageProcessor() {
         return applicationContext.getBean(MessageProcessor.class);
     }

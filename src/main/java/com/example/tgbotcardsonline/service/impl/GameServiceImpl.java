@@ -14,6 +14,7 @@ import com.example.tgbotcardsonline.service.AttackService;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
+import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ public class GameServiceImpl implements GameService {
     private final OnlinePlayerRepository onlinePlayerRepository;
     private final PlayerRepository playerRepository;
     private final AttackRepository attackRepository;
+    private final TelegramBot telegramBot;
 
     @Override
     public Game createGame(Player firstPlayer, Player secondPlayer) {
@@ -41,13 +43,22 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer player2 = onlinePlayerService.createOnlinePlayer(secondPlayer, deck);
 
         Game game = getGame(deck, player, player2);
-        Attack attack = attackService.createAttack(game);
-        game.setCurrentAttack(attack);
-        processPlayers(firstPlayer, secondPlayer, player, player2);
         Game savedGame = gameRepository.save(game);
-        processOnlinePlayers(player, game, player2);
+
+        Attack attack = attackService.createAttack(game);
         attackRepository.save(attack);
+
+        savedGame.setCurrentAttack(attack);
+        savedGame = gameRepository.save(savedGame);
+
+        processPlayers(firstPlayer, secondPlayer, player, player2);
+        processOnlinePlayers(player, game, player2);
         return savedGame;
+    }
+
+    @Override
+    public void surrend(OnlinePlayer player) {
+
     }
 
     private Game getGame(String deck, OnlinePlayer player, OnlinePlayer player2) {
