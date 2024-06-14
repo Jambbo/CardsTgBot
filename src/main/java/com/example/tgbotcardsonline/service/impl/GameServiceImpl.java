@@ -40,25 +40,37 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer player = onlinePlayerService.createOnlinePlayer(firstPlayer, deck);
         OnlinePlayer player2 = onlinePlayerService.createOnlinePlayer(secondPlayer, deck);
 
-        Game game = Game.builder()
+        Game game = getGame(deck, player, player2);
+        Attack attack = attackService.createAttack(game);
+        game.setCurrentAttack(attack);
+        processPlayers(firstPlayer, secondPlayer, player, player2);
+        Game savedGame = gameRepository.save(game);
+        processOnlinePlayers(player, game, player2);
+        attackRepository.save(attack);
+        return savedGame;
+    }
+
+    private Game getGame(String deck, OnlinePlayer player, OnlinePlayer player2) {
+        return Game.builder()
                 .deckId(deck)
                 .trump(getRandomTrump())
                 .players(List.of(player, player2))
                 .build();
-        Attack attack = attackService.createAttack(game);
-        game.setCurrentAttack(attack);
-        firstPlayer.setInGame(true);
-        secondPlayer.setInGame(true);
-        firstPlayer.setPlayerInGame(player);
-        secondPlayer.setPlayerInGame(player2);
-        playerRepository.saveAll(List.of(firstPlayer,secondPlayer));
-        Game savedGame = gameRepository.save(game);
+    }
+
+    private void processOnlinePlayers(OnlinePlayer player, Game game, OnlinePlayer player2) {
         player.setGame(game);
         player2.setGame(game);
         onlinePlayerRepository.save(player);
         onlinePlayerRepository.save(player2);
-        attackRepository.save(attack);
-        return savedGame;
+    }
+
+    private void processPlayers(Player firstPlayer, Player secondPlayer, OnlinePlayer player, OnlinePlayer player2) {
+        firstPlayer.setInGame(true);
+        secondPlayer.setInGame(true);
+        firstPlayer.setPlayerInGame(player);
+        secondPlayer.setPlayerInGame(player2);
+        playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
     }
 
     public Suit getRandomTrump() {

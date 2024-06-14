@@ -27,6 +27,14 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     public OnlinePlayer createOnlinePlayer(Player player,String deckId){
 
         OnlinePlayer onlinePlayer = onlinePlayerMapper.toOnlinePlayer(player);
+        DrawCardsResponse drawCardsResponse = getDrawCardsResponse(deckId);
+        List<Card> savedCards = cardRepository.saveAll(drawCardsResponse.getCards());
+        onlinePlayer.setCards(savedCards);
+        onlinePlayerRepository.save(onlinePlayer);
+        return onlinePlayer;
+    }
+
+    private DrawCardsResponse getDrawCardsResponse(String deckId) {
         DrawCardsResponse drawCardsResponse;
         try {
             drawCardsResponse = cardService.drawACard(deckId, 6);
@@ -36,10 +44,6 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to create online player: " + e.getMessage(), e);
         }
-        List<Card> cards = drawCardsResponse.getCards();
-        List<Card> savedCards = cardRepository.saveAll(cards);
-        onlinePlayer.setCards(savedCards);
-        onlinePlayerRepository.save(onlinePlayer);
-        return onlinePlayer;
+        return drawCardsResponse;
     }
 }
