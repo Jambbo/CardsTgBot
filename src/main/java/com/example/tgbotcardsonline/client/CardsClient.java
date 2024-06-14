@@ -19,18 +19,19 @@ import java.util.List;
 @Slf4j
 public class CardsClient {
     private final RestTemplate restTemplate;
+    public static final List<String> cards= List.of(
+            "6S", "7S", "8S", "9S", "0S", "JS", "QS", "KS", "AS",
+            "6D", "7D", "8D", "9D", "0D", "JD", "QD", "KD", "AD",
+            "6C", "7C", "8C", "9C", "0C", "JC", "QC", "KC", "AC",
+            "6H", "7H", "8H", "9H", "0H", "JH", "QH", "KH", "AH"
+            );
     public CardsClient() {
         this.restTemplate = new RestTemplate();
         this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
     }
 
     public ResponseEntity<DeckResponse> contactToPartialDeck(){
-        List<String> cards = List.of(
-                "6S", "7S", "8S", "9S", "0S", "JS", "QS", "KS", "AS",
-                "6D", "7D", "8D", "9D", "0D", "JD", "QD", "KD", "AD",
-                "6C", "7C", "8C", "9C", "0C", "JC", "QC", "KC", "AC",
-                "6H", "7H", "8H", "9H", "0H", "JH", "QH", "KH", "AH"
-        );
+        List<String> cardsList = cards;
 
         URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/new/shuffle/")
                 .queryParam("cards", String.join(",", cards))

@@ -12,4 +12,5 @@ public interface AttackService {
 
     OnlinePlayer countWhoAttackFirst(List<OnlinePlayer> onlinePlayerList, Game game);
 
+    Long getActivePlayerId(Long attackId);
 }

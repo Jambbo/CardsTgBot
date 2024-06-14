@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 @RequiredArgsConstructor
 public class AttackServiceImpl implements AttackService {
+
     private final AttackRepository attackRepository;
-    private final GameRepository gameRepository;
 
     public Attack createAttack(Game game){
         OnlinePlayer attacker = countWhoAttackFirst(game.getPlayers(), game);
@@ -47,6 +47,10 @@ public class AttackServiceImpl implements AttackService {
             });
         });
         return firstAttacker.get();
+    }
+    @Override
+    public Long getActivePlayerId(Long attackId) {
+        return attackRepository.findActivePlayerIdByAttackId(attackId);
     }
 
     public OnlinePlayer getDefender(List<OnlinePlayer> onlinePlayers, Game game){

@@ -4,6 +4,7 @@ import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.PlayerService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
+import com.example.tgbotcardsonline.service.processors.MessageProcessor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,9 +60,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                 getSearchRequestService().StartLookForRandomGame(player);
                 break;
             default:
+                getMessageProcessor().handle(messageText, player);
                 messageBuilder.text("You sent: " + messageText);
 
-//                cardService.brandNewDeck();
                 break;
         }
 
@@ -89,6 +90,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private SearchRequestService getSearchRequestService() {
         return applicationContext.getBean(SearchRequestService.class);
+    }
+    private MessageProcessor getMessageProcessor() {
+        return applicationContext.getBean(MessageProcessor.class);
     }
 
     @Override
