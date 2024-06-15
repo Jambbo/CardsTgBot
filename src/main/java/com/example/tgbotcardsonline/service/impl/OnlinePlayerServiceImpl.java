@@ -34,6 +34,11 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         return onlinePlayer;
     }
 
+    @Override
+    public void showMyCards(OnlinePlayer player) {
+
+    }
+
     private DrawCardsResponse getDrawCardsResponse(String deckId) {
         DrawCardsResponse drawCardsResponse;
         try {

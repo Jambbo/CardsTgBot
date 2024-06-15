@@ -19,7 +19,10 @@ public class PlayerServiceImpl implements PlayerService {
         return playerRepository.findByChatId(chatId).orElseGet(() -> {
             Player newPlayer = new Player();
             newPlayer.setChatId(message.getChatId());
-            newPlayer.setUsername(message.getFrom().getUserName());
+            newPlayer.setUsername( // if username null -> username = player
+                    message.getFrom().getUserName() != null
+                            ? message.getFrom().getUserName()
+                            : "Player");
             newPlayer.setInGame(false);
             newPlayer.setCreatedAt(LocalDateTime.now());
             return playerRepository.save(newPlayer);

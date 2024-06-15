@@ -10,7 +10,13 @@ public interface AttackService {
 
     Attack createAttack(Game game);
 
-    OnlinePlayer countWhoAttackFirst(List<OnlinePlayer> onlinePlayerList, Game game);
+
+
+    OnlinePlayer countWhoAttackFirst(Game game);
 
     Long getActivePlayerId(Long attackId);
+
+    void finishAttack(OnlinePlayer onlinePlayer);
+
+    void makeMove();
 }

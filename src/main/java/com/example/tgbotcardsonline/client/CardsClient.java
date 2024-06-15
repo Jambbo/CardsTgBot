@@ -57,4 +57,14 @@ public class CardsClient {
             throw new RuntimeException("Failed to draw cards: " + e.getLocalizedMessage(), e);
         }
     }
+    public static String containsCard(String input) {
+        String normalizedInput = input.replaceAll("\\s+", "").toUpperCase();
+
+        for (String card : cards) {
+            if (normalizedInput.contains(card)) {
+                return card;
+            }
+        }
+        return null;
+    }
 }

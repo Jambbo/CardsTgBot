@@ -19,6 +19,7 @@ public class SearchRequestImpl implements SearchRequestService {
     private final SearchRequestRepository searchRequestRepository;
     private final GameService gameService;
     private final TelegramBot telegramBot;
+
     @Override
     public void StartLookForRandomGame(Player player) {
         if (player.isInGame()) {
@@ -36,6 +37,10 @@ public class SearchRequestImpl implements SearchRequestService {
             telegramBot.sendMessageToPlayer(player, "looking for a game!");
         } else {
             Player opponent = searchRequest.get().getSearcher();
+//            if (player.getId().equals(opponent.getId())) {
+//                telegramBot.sendMessageToPlayer(player, "You already looking for  a game");
+//                return;
+//            }
             gameService.createGame(player, opponent);
             // Notify players about the game
             telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
