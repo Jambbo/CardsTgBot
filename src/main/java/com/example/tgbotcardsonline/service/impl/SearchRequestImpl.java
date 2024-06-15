@@ -1,8 +1,10 @@
 package com.example.tgbotcardsonline.service.impl;
 
+import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.SearchRequest;
 import com.example.tgbotcardsonline.repository.SearchRequestRepository;
+import com.example.tgbotcardsonline.service.AttackService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
@@ -19,6 +21,7 @@ public class SearchRequestImpl implements SearchRequestService {
     private final SearchRequestRepository searchRequestRepository;
     private final GameService gameService;
     private final TelegramBot telegramBot;
+    private final AttackService attackService;
 
     @Override
     public void StartLookForRandomGame(Player player) {
@@ -41,10 +44,11 @@ public class SearchRequestImpl implements SearchRequestService {
 //                telegramBot.sendMessageToPlayer(player, "You already looking for  a game");
 //                return;
 //            }
-            gameService.createGame(player, opponent);
+            Game game = gameService.createGame(player, opponent);
             // Notify players about the game
             telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
             telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
+            attackService.sendMessagesToPlayers(game, game.getActivePlayer());
             searchRequestRepository.delete(searchRequest.get());
 
         }

@@ -28,7 +28,7 @@ public class OnlinePlayer {
     )
     private Game game;
     // Вот тут что-то нихуя не уверен, чекни может оно нахуй не нужно
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "op_cards",
             joinColumns =@JoinColumn(name = "online_player_id"),

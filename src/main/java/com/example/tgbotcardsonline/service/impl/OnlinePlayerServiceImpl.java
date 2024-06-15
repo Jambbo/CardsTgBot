@@ -9,6 +9,7 @@ import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
+import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.OnlinePlayerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private final CardService cardService;
     private final OnlinePlayerMapper onlinePlayerMapper;
     private final CardRepository cardRepository;
+    private final TelegramBot telegramBot;
 
     @Override
     public OnlinePlayer createOnlinePlayer(Player player,String deckId){
@@ -36,7 +38,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
 
     @Override
     public void showMyCards(OnlinePlayer player) {
-
+        telegramBot.showAvailableCards(player.getPlayer().getChatId(),player.getCards());
     }
 
     private DrawCardsResponse getDrawCardsResponse(String deckId) {

@@ -10,7 +10,7 @@ public interface AttackService {
 
     Attack createAttack(Game game);
 
-
+    void sendMessagesToPlayers(Game game, OnlinePlayer attacker);
 
     OnlinePlayer countWhoAttackFirst(Game game);
 
@@ -18,5 +18,5 @@ public interface AttackService {
 
     void finishAttack(OnlinePlayer onlinePlayer);
 
-    void makeMove();
+    void makeMove(OnlinePlayer onlinePlayer, String cardCode);
 }

@@ -16,13 +16,16 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Objects.isNull;
 
@@ -47,13 +50,18 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     @SneakyThrows
     public void onUpdateReceived(Update update) {
+
+
         String messageText = update.getMessage().getText();
         Long chatId = update.getMessage().getChatId();
-
+        Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
+        if(update.hasCallbackQuery()){
+            System.out.println("STAS");
+            handleCallbackQuery(update.getCallbackQuery(), player);
+        }
         SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
                 .chatId(chatId.toString());
 
-        Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
 
         if (player.isInGame()){
             getMessageProcessor().handleGameOperation(messageText, player); // process game
@@ -84,6 +92,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
     }
+    private void handleCallbackQuery(CallbackQuery callbackQuery, Player player) {
+        String callbackData = callbackQuery.getData();
+
+        getMessageProcessor().handleGameOperationCallbackData(callbackData, player);
+    }
 
     @SneakyThrows
     @Async
@@ -107,10 +120,18 @@ public class TelegramBot extends TelegramLongPollingBot {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
+        Map<String, String> suitSymbols = new HashMap<>();
+        suitSymbols.put("H", "♥");
+        suitSymbols.put("D", "♦");
+        suitSymbols.put("S", "♠");
+        suitSymbols.put("C", "♣");
+
         for (Card card : cards) {
             String cardCode = card.getCode();
+            String cardValue = cardCode.substring(0, cardCode.length() - 1);
+            String cardSuit = cardCode.substring(cardCode.length() - 1);
             InlineKeyboardButton button = new InlineKeyboardButton();
-            button.setText(cardCode); // TODO handle to show suits of card by symbols
+            button.setText(cardValue + suitSymbols.get(cardSuit));
             button.setCallbackData(cardCode);
 
             List<InlineKeyboardButton> row = new ArrayList<>();

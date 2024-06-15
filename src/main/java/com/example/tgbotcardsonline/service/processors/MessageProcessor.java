@@ -34,35 +34,29 @@ public class MessageProcessor {
     private final GameRepository gameRepository;
 
     public void handleGameOperation(String messageText, Player player) {
-        OnlinePlayer onlinePlayer = onlinePlayerRepository.findByPlayer(player).orElseThrow();
-        Game game = onlinePlayer.getGame();
-
+//        OnlinePlayer onlinePlayer = onlinePlayerRepository.findByPlayer(player).orElseThrow();
+        OnlinePlayer onlinePlayer = player.getPlayerInGame(); // don't contact to db everytime, gonna be faster than approach above
         if (messageText.startsWith("/")) handleCommandsInGame(messageText, onlinePlayer);
-
-        if (checkIfPlayersTurn(player)) {
-            handleWithMove(messageText, onlinePlayer);
+        if (messageText.equals("finish attack")) {
+            attackService.finishAttack(onlinePlayer);
         }
+        handleWithMove(messageText,onlinePlayer);
+    }
 
-        if (CardsClient.cards.contains(messageText)) {
-            if (checkIfPlayersTurn(player)) {
-                List<Card> cards = player.getPlayerInGame().getCards();
-                if (checkIfPlayerHasThisCard(cards, messageText)) {
-
-                }
-            }
+    public void handleGameOperationCallbackData(String callbackData, Player player){
+        OnlinePlayer onlinePlayer = player.getPlayerInGame();
+        if (checkIfPlayersTurn(player)) {
+            handleWithMove(callbackData, onlinePlayer);
         }
     }
 
-    private void handleWithMove(String messageText, OnlinePlayer onlinePlayer) {
-        if (messageText.equals("finish attack")) {
-            attackService.finishAttack(onlinePlayer);
-        } else {
-            String playerMove = CardsClient.containsCard(messageText);
+    private void handleWithMove(String callbackData, OnlinePlayer onlinePlayer) {
+            String playerMove = CardsClient.containsCard(callbackData);
             if (isNull(playerMove)){
-                telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), messageText + " is not a card!");
+                telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), callbackData + " is not a card!");
             }
-            attackService.makeMove();
-        }
+            attackService.makeMove(onlinePlayer, callbackData);
+
     }
 
     private void handleCommandsInGame(String message, OnlinePlayer player) {

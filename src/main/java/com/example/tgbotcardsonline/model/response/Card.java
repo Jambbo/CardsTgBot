@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 @ToString
 @Entity
+@Builder
 @Table(name = "card")
 public class Card {
     @Id
