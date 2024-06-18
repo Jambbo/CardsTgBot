@@ -7,14 +7,17 @@ import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
+import com.example.tgbotcardsonline.repository.PlayerRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.OnlinePlayerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,10 +27,11 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private final OnlinePlayerMapper onlinePlayerMapper;
     private final CardRepository cardRepository;
     private final TelegramBot telegramBot;
+    private final PlayerRepository playerRepository;
+
 
     @Override
     public OnlinePlayer createOnlinePlayer(Player player,String deckId){
-
         OnlinePlayer onlinePlayer = onlinePlayerMapper.toOnlinePlayer(player);
         DrawCardsResponse drawCardsResponse = getDrawCardsResponse(deckId);
         List<Card> savedCards = cardRepository.saveAll(drawCardsResponse.getCards());

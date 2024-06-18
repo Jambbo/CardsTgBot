@@ -16,5 +16,4 @@ public interface OnlinePlayerMapper {
                 .game(null)
                 .build();
     }
-
 }

@@ -6,10 +6,10 @@ import lombok.Getter;
 
 @Getter
 public enum Suit {
-    HEARTS("H"),
-    DIAMONDS("D"),
-    CLUBS("C"),
-    SPADES("S");
+    HEARTS("HEARTS"),
+    DIAMONDS("DIAMONDS"),
+    CLUBS("CLUBS"),
+    SPADES("SPADES");
     @JsonValue
     private final String suit;
 

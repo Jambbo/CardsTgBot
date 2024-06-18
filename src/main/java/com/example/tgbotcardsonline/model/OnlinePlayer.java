@@ -4,6 +4,7 @@ import com.example.tgbotcardsonline.model.response.Card;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,12 +28,17 @@ public class OnlinePlayer {
             inverseJoinColumns = @JoinColumn(name = "game_id")
     )
     private Game game;
-    // Вот тут что-то нихуя не уверен, чекни может оно нахуй не нужно
+
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "op_cards",
             joinColumns =@JoinColumn(name = "online_player_id"),
             inverseJoinColumns = @JoinColumn(name = "card_id")
     )
-    private List<Card> cards;
+    private List<Card> cards = new ArrayList<>();
+
+    public void addCard(Card card) {
+        cards.add(card);
+        card.setOnlinePlayer(this);
+    }
 }

@@ -76,17 +76,17 @@ CREATE TABLE game_players
 CREATE TABLE attack_beaten
 (
     attack_id BIGINT,
-    card_id   BIGINT,
-    PRIMARY KEY (attack_id, card_id),
+    beaten_card_id   BIGINT,
+    PRIMARY KEY (attack_id, beaten_card_id),
     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (attack_id) REFERENCES Attack (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (beaten_card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
 CREATE TABLE attack_offensive_cards
 (
     attack_id BIGINT,
-    card_id   BIGINT,
-    PRIMARY KEY (attack_id, card_id),
+    offensive_card_id   BIGINT,
+    PRIMARY KEY (attack_id, offensive_card_id),
     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (attack_id) REFERENCES Attack (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (offensive_card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 
 )

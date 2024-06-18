@@ -7,6 +7,7 @@ import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.repository.AttackRepository;
+import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.service.AttackService;
@@ -14,11 +15,14 @@ import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.Objects.isNull;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class AttackServiceImpl implements AttackService {
     private final GameRepository gameRepository;
     private final OnlinePlayerRepository onlinePlayerRepository;
     private final CardMapper cardMapper;
+    private final CardRepository cardRepository;
 
     public Attack createAttack(Game game) {
         OnlinePlayer attacker = countWhoAttackFirst(game);
@@ -81,6 +86,7 @@ public class AttackServiceImpl implements AttackService {
     }
 
     @Override
+    @Transactional
     public void makeMove(OnlinePlayer onlinePlayer, String callBackData) {
         Game game = onlinePlayer.getGame();
         Player currentPlayer = onlinePlayer.getPlayer();
@@ -88,7 +94,11 @@ public class AttackServiceImpl implements AttackService {
             telegramBot.sendMessageToPlayer(currentPlayer, "It's not your turn!");
             return;
         }
-        updateGameState(game, onlinePlayer, callBackData);
+        Card card = cardRepository.findByCode(callBackData);
+        if(isNull(card)){
+            throw new IllegalArgumentException("Invalid card code: " + callBackData);
+        }
+        updateGameState(game, onlinePlayer, card);
         notifyPlayers(game, onlinePlayer, callBackData);
         if (isGameOver(game)) {
             handleGameOver(game);
@@ -107,6 +117,10 @@ public class AttackServiceImpl implements AttackService {
                 .orElseThrow();
 
         game.setActivePlayer(nextPlayer);
+        Attack attack = attackRepository.findByGame(game);
+        attack.setActivePlayer(nextPlayer);
+        attack.setAttacker(nextPlayer);
+        attack.setDefender(currentPlayer);
     }
 
     private void handleGameOver(Game game) {
@@ -133,10 +147,13 @@ public class AttackServiceImpl implements AttackService {
         telegramBot.sendMessageToPlayer(opponent.getPlayer(), currentPlayer.getUsername() + " played: " + cardCode);
     }
 
-    private void updateGameState(Game game, OnlinePlayer onlinePlayer, String cardCode) {
-        onlinePlayer.getCards().removeIf(card -> card.getCode().equals(cardCode));
-        game.getCurrentAttack().getOffensiveCards().add(cardMapper.toCardFromStringCode(cardCode));
-        onlinePlayerRepository.save(onlinePlayer);
+    private void updateGameState(Game game, OnlinePlayer onlinePlayer, Card card) {
+         onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
+        Attack attack = attackRepository.findByGame(game);
+        List<Card> offensiveCards = attack.getOffensiveCards();
+        offensiveCards.add(card);
+        attack.setOffensiveCards(offensiveCards);
+        attackRepository.save(attack);
     }
 
     public OnlinePlayer getDefender(Game game) {

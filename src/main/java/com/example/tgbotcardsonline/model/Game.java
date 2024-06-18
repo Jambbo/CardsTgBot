@@ -24,10 +24,10 @@ public class Game {
     private Attack currentAttack;
     @Enumerated(EnumType.STRING)
     private Suit trump;
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "active_player_id")
     private OnlinePlayer activePlayer;
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "game_players",
             joinColumns = @JoinColumn(name = "game_id"),

@@ -1,8 +1,10 @@
 package com.example.tgbotcardsonline.tg;
 
+import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.service.CardService;
+import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.PlayerService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.service.processors.MessageProcessor;
@@ -50,51 +52,52 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     @SneakyThrows
     public void onUpdateReceived(Update update) {
-
-
-        String messageText = update.getMessage().getText();
-        Long chatId = update.getMessage().getChatId();
-        Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
         if(update.hasCallbackQuery()){
-            System.out.println("STAS");
+            Long chatId = update.getCallbackQuery().getMessage().getChatId();
+            System.out.println(update.getCallbackQuery().getData());
+            System.out.println(update.getCallbackQuery().getMessage());
+            Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
             handleCallbackQuery(update.getCallbackQuery(), player);
-        }
-        SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
-                .chatId(chatId.toString());
-
-
-        if (player.isInGame()){
-            getMessageProcessor().handleGameOperation(messageText, player); // process game
             return;
         }
+        if(update.hasMessage() && update.getMessage().hasText()){
+            String messageText = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+            Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
 
-        switch (messageText) { // process commands
-            case "/start":
-                messageBuilder.text("Welcome! " + player.getUsername() + "\n Let's play!");
+            SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
+                    .chatId(chatId.toString());
 
-                break;
-            case "/aboba":
-                messageBuilder.text("aboba");
-                break;
-            case "/startGame":
-                getSearchRequestService().StartLookForRandomGame(player);
-                break;
-            default:
 
-                messageBuilder.text("You sent: " + messageText);
+            if (player.isInGame()){
+                getMessageProcessor().handleGameOperation(messageText, player); // process game
+                return;
+            }
+            switch (messageText) { // process commands
+                case "/start":
+                    messageBuilder.text("Welcome! " + player.getUsername() + "\n Let's play!");
 
-                break;
+                    break;
+                case "/aboba":
+                    messageBuilder.text("aboba");
+                    break;
+                case "/startGame":
+                    getSearchRequestService().StartLookForRandomGame(player);
+                    break;
+                default:
+
+                    messageBuilder.text("You sent: " + messageText);
+
+                    break;
+            }
+            SendMessage sendMessage = messageBuilder.build();
+            if (!isNull(sendMessage)) {
+                execute(sendMessage);
+            }
         }
-
-        SendMessage sendMessage = messageBuilder.build();
-        if (!isNull(sendMessage)) {
-            execute(sendMessage);
-        }
-
     }
     private void handleCallbackQuery(CallbackQuery callbackQuery, Player player) {
         String callbackData = callbackQuery.getData();
-
         getMessageProcessor().handleGameOperationCallbackData(callbackData, player);
     }
 
