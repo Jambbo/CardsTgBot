@@ -132,6 +132,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         for (Card card : cards) {
             String cardCode = card.getCode();
             String cardValue = cardCode.substring(0, cardCode.length() - 1);
+            if(cardValue.equals("0")) cardValue = "10";
             String cardSuit = cardCode.substring(cardCode.length() - 1);
             InlineKeyboardButton button = new InlineKeyboardButton();
             button.setText(cardValue + suitSymbols.get(cardSuit));

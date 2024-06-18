@@ -54,28 +54,10 @@ public class GameServiceImpl implements GameService {
 
         processPlayers(firstPlayer, secondPlayer, player, player2);
         processOnlinePlayers(player, game, player2);
-        notifyUsersAboutTrump(game.getPlayers(), game);
         return savedGame;
     }
 
-    private void notifyUsersAboutTrump(List<OnlinePlayer> players, Game game) {
-        Map<String, String> suitSymbols = new HashMap<>();
-        suitSymbols.put("HEARTS", "♥");
-        suitSymbols.put("DIAMONDS", "♦");
-        suitSymbols.put("SPADES", "♠");
-        suitSymbols.put("CLUBS", "♣");
 
-        Suit trump = game.getTrump();
-        String trumpName = trump.name().toUpperCase();
-        String suitSymbol = suitSymbols.get(trumpName);
-
-        players.forEach(
-                oP -> {
-                    Player player = oP.getPlayer();
-                    telegramBot.sendMessageToPlayer(player,"Trump is: "+trump+" "+ suitSymbol);
-                }
-        );
-    }
 
     @Override
     public void surrend(OnlinePlayer player) {

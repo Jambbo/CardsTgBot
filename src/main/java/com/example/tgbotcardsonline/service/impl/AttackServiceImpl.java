@@ -17,9 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.isNull;
@@ -60,19 +58,27 @@ public class AttackServiceImpl implements AttackService {
     public OnlinePlayer countWhoAttackFirst(Game game) {
         List<OnlinePlayer> onlinePlayers = game.getPlayers();
         Suit trump = game.getTrump();
-        AtomicReference<OnlinePlayer> firstAttacker = new AtomicReference<>(null);
-        AtomicReference<Card> lowestTrumpCard = new AtomicReference<>(null);
-        onlinePlayers.forEach(oP -> {
-            oP.getCards().forEach(c -> {
-                c.getSuit();
-                boolean isTrump = c.isTrump(trump);
-                if (lowestTrumpCard.get() == null || c.getValue().compareTo(lowestTrumpCard.get().getValue()) < 6) {
-                    lowestTrumpCard.set(c);
-                    firstAttacker.set(oP);
+        OnlinePlayer firstAttacker = null;
+        Card lowestTrumpCard = null;
+
+        for (OnlinePlayer player : onlinePlayers) {
+            for (Card card : player.getCards()) {
+                if (card.isTrump(trump)) {
+                    if (lowestTrumpCard == null || card.getValue().compareTo(lowestTrumpCard.getValue()) < 0) {
+                        lowestTrumpCard = card;
+                        firstAttacker = player;
+                    }
                 }
-            });
-        });
-        return firstAttacker.get();
+            }
+        }
+
+        if (firstAttacker == null) {
+            // No trump cards found, choose randomly
+            Random random = new Random();
+            firstAttacker = onlinePlayers.get(random.nextInt(onlinePlayers.size()));
+        }
+
+        return firstAttacker;
     }
 
     @Override
@@ -94,6 +100,7 @@ public class AttackServiceImpl implements AttackService {
             telegramBot.sendMessageToPlayer(currentPlayer, "It's not your turn!");
             return;
         }
+        //TODO: !!!
         Card card = cardRepository.findByCode(callBackData);
         if(isNull(card)){
             throw new IllegalArgumentException("Invalid card code: " + callBackData);
@@ -108,7 +115,7 @@ public class AttackServiceImpl implements AttackService {
         }
         gameRepository.save(game);
     }
-
+//TODO: FIX
     private void switchTurns(Game game) {
         OnlinePlayer currentPlayer = game.getActivePlayer();
         OnlinePlayer nextPlayer = game.getPlayers().stream()
@@ -121,6 +128,7 @@ public class AttackServiceImpl implements AttackService {
         attack.setActivePlayer(nextPlayer);
         attack.setAttacker(nextPlayer);
         attack.setDefender(currentPlayer);
+        gameRepository.save(game);
     }
 
     private void handleGameOver(Game game) {
@@ -130,7 +138,7 @@ public class AttackServiceImpl implements AttackService {
             telegramBot.sendMessageToPlayer(p, "Game over!");
         }
     }
-
+//TODO: check deck
     private boolean isGameOver(Game game) {
         return game.getPlayers().stream()
                 .anyMatch(player -> player.getCards().isEmpty());
@@ -148,12 +156,19 @@ public class AttackServiceImpl implements AttackService {
     }
 
     private void updateGameState(Game game, OnlinePlayer onlinePlayer, Card card) {
-         onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
-        Attack attack = attackRepository.findByGame(game);
-        List<Card> offensiveCards = attack.getOffensiveCards();
-        offensiveCards.add(card);
-        attack.setOffensiveCards(offensiveCards);
-        attackRepository.save(attack);
+        onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
+
+    }
+
+    public static OnlinePlayer getNextPlayer(Game game){
+        List<OnlinePlayer> players = game.getPlayers();
+        Optional<OnlinePlayer> onlinePlayer = players.stream().filter(oP -> oP.equals(oP.getGame().getActivePlayer())).findFirst();
+        int index = players.indexOf(onlinePlayer.get());
+        if(index == players.size()-1){
+           return players.get(0);
+        }else{
+            return players.get(index+1);
+        }
     }
 
     public OnlinePlayer getDefender(Game game) {
