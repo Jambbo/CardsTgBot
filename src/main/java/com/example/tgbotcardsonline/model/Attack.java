@@ -37,6 +37,7 @@ public class Attack {
             inverseJoinColumns = @JoinColumn(name = "offensive_card_id")
     )
     // карты которые используються для атаки(не только от атакуещего а еще может кто-то подкинул)
+    // TODO change to card
     private List<Card> offensiveCards;
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(

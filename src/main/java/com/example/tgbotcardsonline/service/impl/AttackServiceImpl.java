@@ -12,6 +12,7 @@ import com.example.tgbotcardsonline.service.AttackService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class AttackServiceImpl implements AttackService {
                 .game(game)
                 .build();
     }
+
     @Override
     public void sendMessagesToPlayers(Game game, OnlinePlayer attacker) {
 //        telegramBot.showAvailableCards(attacker.getPlayer().getChatId(), attacker.getCards());
@@ -94,23 +96,30 @@ public class AttackServiceImpl implements AttackService {
     @Transactional
     public void makeMove(OnlinePlayer onlinePlayer, String callBackData) {
         Game game = onlinePlayer.getGame();
+        Attack attack = game.getCurrentAttack();
         Player currentPlayer = onlinePlayer.getPlayer();
+        Boolean  success;
         if (!isPlayerTurn(onlinePlayer)) {
             telegramBot.sendMessageToPlayer(currentPlayer, "It's not your turn!");
             return;
         }
         //TODO: !!!
-        Card card = cardRepository.findByCode(callBackData);
-        if(isNull(card)){
+        Card card = getInputedCard(onlinePlayer, callBackData);
+        if (isNull(card)) {
             throw new IllegalArgumentException("Invalid card code: " + callBackData);
+        }
+        if (onlinePlayer.equals(attack.getDefender())) { // if defend
+            success = handleDefend(attack, onlinePlayer, card);
+            if(!success) return; // if defence was not  successful -> finish method
+        } else { // if attack
+            setAttackCards(attack, onlinePlayer, card);
         }
 
 
-
-        updateGameState(game, onlinePlayer, card);
         notifyPlayers(game, onlinePlayer, callBackData);
         if (isGameOver(game)) {
             handleGameOver(game);
+
         } else {
             // Switch turns
             switchTurns(game);
@@ -118,6 +127,45 @@ public class AttackServiceImpl implements AttackService {
 
         gameRepository.save(game);
     }
+
+    private boolean handleDefend(Attack attack, OnlinePlayer onlinePlayer, Card defendingCard) {
+        List<Card> offensiveCards = attack.getOffensiveCards();
+        Suit trumpSuit = attack.getGame().getTrump();  // Assuming this method exists to get the trump suit
+
+        for (Card offensiveCard : offensiveCards) {
+            if (canDefend(offensiveCard, defendingCard, trumpSuit)) {
+                // TODO IMPLEMENT
+                System.out.println("Defense successful!");
+                return true;
+            } else {
+                telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), "This card cannot defence!");
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean canDefend(Card offensiveCard, Card defendingCard, Suit trumpSuit) {
+        if (defendingCard.getSuit() == offensiveCard.getSuit()) {
+            // If both cards are of the same suit, compare by value
+            return defendingCard.getValue().ordinal() > offensiveCard.getValue().ordinal();
+        } else if (defendingCard.getSuit() == trumpSuit) {
+            // If the defending card is a trump card, it beats any non-trump card
+            return offensiveCard.getSuit() != trumpSuit;
+        } else {
+            return false;
+        }
+    }
+
+    @SneakyThrows
+    private Card getInputedCard(OnlinePlayer onlinePlayer, String callBackData) {
+        List<Card> cards = onlinePlayer.getCards();
+        for (Card card : cards) {
+            if (card.getCode().equals(callBackData)) return card;
+        }
+        return null;
+    }
+
     private void switchTurns(Game game) {
         OnlinePlayer currentPlayer = game.getActivePlayer();
         OnlinePlayer nextPlayer = game.getPlayers().stream()
@@ -140,14 +188,15 @@ public class AttackServiceImpl implements AttackService {
             telegramBot.sendMessageToPlayer(p, "Game over!");
         }
     }
+
     //TODO: fix bug with remaining in DeckResponse
     private boolean isGameOver(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
-        if(deckResponse.getRemaining()<1){
+        if (deckResponse.getRemaining() < 1) {
             return game.getPlayers().stream()
                     .anyMatch(player -> player.getCards().isEmpty());
         }
-            return false;
+        return false;
     }
 
     private void notifyPlayers(Game game, OnlinePlayer onlinePlayer, String cardCode) {
@@ -156,7 +205,7 @@ public class AttackServiceImpl implements AttackService {
         players.forEach(
                 oP -> {
                     boolean isOpponent = !oP.equals(currentPlayer);
-                    if(isOpponent){
+                    if (isOpponent) {
                         telegramBot.sendMessageToPlayer(oP.getPlayer(), currentPlayer.getUsername() + " played: " + cardCode);
                     }
                 }
@@ -164,21 +213,21 @@ public class AttackServiceImpl implements AttackService {
 //        telegramBot.sendMessageToPlayer(currentPlayer, "You played: " + cardCode);
     }
 
-    private void updateGameState(Game game, OnlinePlayer onlinePlayer, Card card) {
+    private void setAttackCards(Attack attack, OnlinePlayer onlinePlayer, Card card) {
         onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
-        List<Card> offensiveCards = game.getCurrentAttack().getOffensiveCards();
-        offensiveCards.add(card);
-
+        attack.getOffensiveCards().add(card);
+        onlinePlayerRepository.save(onlinePlayer);
+        attackRepository.save(attack);
     }
 
-    public static OnlinePlayer getNextPlayer(Game game){
+    public static OnlinePlayer getNextPlayer(Game game) {
         List<OnlinePlayer> players = game.getPlayers();
         Optional<OnlinePlayer> onlinePlayer = players.stream().filter(oP -> oP.equals(oP.getGame().getActivePlayer())).findFirst();
         int index = players.indexOf(onlinePlayer.get());
-        if(index == players.size()-1){
-           return players.get(0);
-        }else{
-            return players.get(index+1);
+        if (index == players.size() - 1) {
+            return players.get(0);
+        } else {
+            return players.get(index + 1);
         }
     }
 
@@ -189,6 +238,7 @@ public class AttackServiceImpl implements AttackService {
         int defenderIndex = (index + 1) % onlinePlayers.size();
         return onlinePlayers.get(defenderIndex);
     }
+
     private boolean isPlayerTurn(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
         return game.getActivePlayer().equals(onlinePlayer);
