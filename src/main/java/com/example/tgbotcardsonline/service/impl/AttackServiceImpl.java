@@ -6,10 +6,8 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
-import com.example.tgbotcardsonline.repository.AttackRepository;
-import com.example.tgbotcardsonline.repository.CardRepository;
-import com.example.tgbotcardsonline.repository.GameRepository;
-import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.AttackService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.CardMapper;
@@ -32,6 +30,7 @@ public class AttackServiceImpl implements AttackService {
     private final OnlinePlayerRepository onlinePlayerRepository;
     private final CardMapper cardMapper;
     private final CardRepository cardRepository;
+    private final DeckResponseRepository deckResponseRepository;
 
     public Attack createAttack(Game game) {
         OnlinePlayer attacker = countWhoAttackFirst(game);
@@ -105,6 +104,9 @@ public class AttackServiceImpl implements AttackService {
         if(isNull(card)){
             throw new IllegalArgumentException("Invalid card code: " + callBackData);
         }
+
+
+
         updateGameState(game, onlinePlayer, card);
         notifyPlayers(game, onlinePlayer, callBackData);
         if (isGameOver(game)) {
@@ -113,9 +115,9 @@ public class AttackServiceImpl implements AttackService {
             // Switch turns
             switchTurns(game);
         }
+
         gameRepository.save(game);
     }
-//TODO: FIX
     private void switchTurns(Game game) {
         OnlinePlayer currentPlayer = game.getActivePlayer();
         OnlinePlayer nextPlayer = game.getPlayers().stream()
@@ -138,25 +140,34 @@ public class AttackServiceImpl implements AttackService {
             telegramBot.sendMessageToPlayer(p, "Game over!");
         }
     }
-//TODO: check deck
+    //TODO: fix bug with remaining in DeckResponse
     private boolean isGameOver(Game game) {
-        return game.getPlayers().stream()
-                .anyMatch(player -> player.getCards().isEmpty());
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
+        if(deckResponse.getRemaining()<1){
+            return game.getPlayers().stream()
+                    .anyMatch(player -> player.getCards().isEmpty());
+        }
+            return false;
     }
 
     private void notifyPlayers(Game game, OnlinePlayer onlinePlayer, String cardCode) {
         Player currentPlayer = onlinePlayer.getPlayer();
-        OnlinePlayer opponent = game.getPlayers().stream()
-                .filter(oP -> !oP.equals(currentPlayer))
-                .findFirst()
-                .orElseThrow();
-
-        telegramBot.sendMessageToPlayer(currentPlayer, "You played: " + cardCode);
-        telegramBot.sendMessageToPlayer(opponent.getPlayer(), currentPlayer.getUsername() + " played: " + cardCode);
+        List<OnlinePlayer> players = game.getPlayers();
+        players.forEach(
+                oP -> {
+                    boolean isOpponent = !oP.equals(currentPlayer);
+                    if(isOpponent){
+                        telegramBot.sendMessageToPlayer(oP.getPlayer(), currentPlayer.getUsername() + " played: " + cardCode);
+                    }
+                }
+        );
+//        telegramBot.sendMessageToPlayer(currentPlayer, "You played: " + cardCode);
     }
 
     private void updateGameState(Game game, OnlinePlayer onlinePlayer, Card card) {
         onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
+        List<Card> offensiveCards = game.getCurrentAttack().getOffensiveCards();
+        offensiveCards.add(card);
 
     }
 

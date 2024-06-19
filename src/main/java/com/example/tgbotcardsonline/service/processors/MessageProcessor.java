@@ -45,9 +45,9 @@ public class MessageProcessor {
 
     public void handleGameOperationCallbackData(String callbackData, Player player){
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
-        if (checkIfPlayersTurn(player)) {
+//        if (checkIfPlayersTurn(player)) {
             handleWithMove(callbackData, onlinePlayer);
-        }
+
     }
 
     private void handleWithMove(String callbackData, OnlinePlayer onlinePlayer) {
@@ -72,18 +72,18 @@ public class MessageProcessor {
         }
     }
 
-    public boolean checkIfPlayersTurn(Player player) {
-        Long attackId = 1L;
-        Long activePlayerId = attackService.getActivePlayerId(attackId);
-        Long oPId = player.getPlayerInGame().getId();
-        if (Objects.equals(oPId, activePlayerId)) {
-            telegramBot.sendMessageToPlayer(player, "Your turn");
-            return true;
-        } else {
-            telegramBot.sendMessageToPlayer(player, "Not your turn.");
-            return false;
-        }
-    }
+//    public boolean checkIfPlayersTurn(Player player) {
+//        Long attackId = 1L;
+//        Long activePlayerId = attackService.getActivePlayerId(attackId);
+//        Long oPId = player.getPlayerInGame().getId();
+//        if (Objects.equals(oPId, activePlayerId)) {
+//            telegramBot.sendMessageToPlayer(player, "Your turn");
+//            return true;
+//        } else {
+//            telegramBot.sendMessageToPlayer(player, "Not your turn.");
+//            return false;
+//        }
+//    }
 
     public boolean checkIfPlayerHasThisCard(List<Card> cards, String messageText) {
         List<Card> list = new ArrayList<>();

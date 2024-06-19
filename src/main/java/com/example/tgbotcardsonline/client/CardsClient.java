@@ -31,8 +31,6 @@ public class CardsClient {
     }
 
     public ResponseEntity<DeckResponse> contactToPartialDeck(){
-        List<String> cardsList = cards;
-
         URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/new/shuffle/")
                 .queryParam("cards", String.join(",", cards))
                 .build()
