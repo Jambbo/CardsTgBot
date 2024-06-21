@@ -34,28 +34,26 @@ public class MessageProcessor {
     private final GameRepository gameRepository;
 
     public void handleGameOperation(String messageText, Player player) {
-//        OnlinePlayer onlinePlayer = onlinePlayerRepository.findByPlayer(player).orElseThrow();
-        OnlinePlayer onlinePlayer = player.getPlayerInGame(); // don't contact to db everytime, gonna be faster than approach above
+        OnlinePlayer onlinePlayer = player.getPlayerInGame();
         if (messageText.startsWith("/")) handleCommandsInGame(messageText, onlinePlayer);
         if (messageText.equals("finish attack")) {
             attackService.finishAttack(onlinePlayer);
         }
-        handleWithMove(messageText,onlinePlayer);
+        handleWithMove(messageText, onlinePlayer);
     }
 
-    public void handleGameOperationCallbackData(String callbackData, Player player){
+    public void handleGameOperationCallbackData(String callbackData, Player player) {
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
 //        if (checkIfPlayersTurn(player)) {
-            handleWithMove(callbackData, onlinePlayer);
-
+        handleWithMove(callbackData, onlinePlayer);
     }
 
     private void handleWithMove(String callbackData, OnlinePlayer onlinePlayer) {
-            String playerMove = CardsClient.containsCard(callbackData);
-            if (isNull(playerMove)){
-                telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), callbackData + " is not a card!");
-            }
-            attackService.makeMove(onlinePlayer, callbackData);
+        String playerMove = CardsClient.containsCard(callbackData);
+        if (isNull(playerMove)) {
+            telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), callbackData + " is not a card!");
+        }
+        attackService.makeMove(onlinePlayer, callbackData);
 
     }
 
