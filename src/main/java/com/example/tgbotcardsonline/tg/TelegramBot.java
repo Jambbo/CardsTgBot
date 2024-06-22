@@ -34,17 +34,14 @@ import static java.util.Objects.isNull;
 @Slf4j
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
-    private final CardService cardService;
     private final PlayerService playerService;
     private final ApplicationContext applicationContext;
     @Value("${bot.name}")
     private String name;
 
     public TelegramBot(@Value("${bot.token}") String botToken,
-                       CardService cardService,
                        PlayerService playerService, ApplicationContext applicationContext) {
         super(new DefaultBotOptions(), botToken);
-        this.cardService = cardService;
         this.playerService = playerService;
         this.applicationContext = applicationContext;
     }
@@ -54,10 +51,10 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if(update.hasCallbackQuery()){
             Long chatId = update.getCallbackQuery().getMessage().getChatId();
-            System.out.println(update.getCallbackQuery().getData());
-            System.out.println(update.getCallbackQuery().getMessage());
+            log.info(update.getCallbackQuery().getData());
+            log.info(update.getCallbackQuery().getMessage().toString());
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
-            getMessageProcessor().handleGameOperationCallbackData(update.getCallbackQuery().getData(), player);
+            getMessageProcessor().handleWithMove(update.getCallbackQuery().getData(), player);
             return;
         }
         if(update.hasMessage() && update.getMessage().hasText()){

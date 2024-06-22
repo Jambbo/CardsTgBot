@@ -7,6 +7,7 @@ import com.example.tgbotcardsonline.model.response.DeckResponse;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.service.CardService;
+import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class CardServiceImpl implements CardService {
 
     private final CardsClient cardsClient;
     private final DeckResponseRepository deckResponseRepository;
+    private final TelegramBot telegramBot;
 
     @Override
     public String brandNewDeck() {
@@ -41,12 +43,15 @@ public class CardServiceImpl implements CardService {
         }
     }
 
-    @SneakyThrows
     @Override
     public Card getInputedCard(OnlinePlayer onlinePlayer, String callBackData) {
-        return onlinePlayer.getCards().stream()
-                .filter(
-                        c -> c.getCode().equals(callBackData)
-                ).findFirst().get();
+
+        for (Card card : onlinePlayer.getCards()) {
+            if(card.getCode().equals(callBackData)){
+                return card;
+            }
+        }
+        telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(),"You do not have card "+callBackData);
+        throw new RuntimeException();
     }
 }

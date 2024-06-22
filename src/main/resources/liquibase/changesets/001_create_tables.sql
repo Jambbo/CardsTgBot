@@ -1,6 +1,6 @@
 CREATE TABLE deck_response
 (
-    id BIGSERIAL PRIMARY KEY,
+    id        BIGSERIAL PRIMARY KEY,
     success   BOOLEAN NOT NULL,
     deck_id   VARCHAR NOT NULL,
     shuffled  BOOLEAN NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE deck_response
 );
 CREATE TABLE Player
 (
-    id BIGSERIAL PRIMARY KEY,
+    id                BIGSERIAL PRIMARY KEY,
     chat_id           BIGINT    NOT NULL,
     username          VARCHAR(255)       DEFAULT 'User',
     player_in_game_id INT,
@@ -18,31 +18,23 @@ CREATE TABLE Player
 
 CREATE TABLE Game
 (
-    id BIGSERIAL PRIMARY KEY,
-    attack_id        INT,
-    deck_id          VARCHAR,
-    trump            VARCHAR,
-    active_player_id INT
-);
-
-CREATE TABLE Attack
-(
-    id BIGSERIAL PRIMARY KEY,
-    game_id          INT,
-    offensive_card_id INT,
-    attacker_id      INT,
-    defender_id      INT,
-    active_player_id INT
+    id                BIGSERIAL PRIMARY KEY,
+    deck_id           VARCHAR,
+    attacker_id       INT,
+    defender_id       INT,
+    active_player_id  INT,
+    trump             VARCHAR,
+    offensive_card_id INT
 );
 
 CREATE TABLE online_player
 (
-    id BIGSERIAL PRIMARY KEY,
+    id        BIGSERIAL PRIMARY KEY,
     player_id INT
 );
 CREATE TABLE search_request
 (
-    id BIGSERIAL PRIMARY KEY,
+    id          BIGSERIAL PRIMARY KEY,
     searcher_id INT,
     created_at  timestamp,
     game_type   VARCHAR
@@ -50,7 +42,7 @@ CREATE TABLE search_request
 
 CREATE TABLE card
 (
-    id BIGSERIAL PRIMARY KEY,
+    id    BIGSERIAL PRIMARY KEY,
     code  VARCHAR,
     image VARCHAR,
     suit  VARCHAR,
@@ -74,20 +66,11 @@ CREATE TABLE game_players
     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (player_id) REFERENCES online_player (id) ON DELETE CASCADE ON UPDATE NO ACTION,
     CONSTRAINT fk_op_cards_card_id FOREIGN KEY (game_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
-CREATE TABLE attack_beaten
+CREATE TABLE game_beaten
 (
-    attack_id BIGINT,
-    beaten_card_id   BIGINT,
-    PRIMARY KEY (attack_id, beaten_card_id),
-    CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (attack_id) REFERENCES Attack (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (beaten_card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+    game_id BIGINT,
+    card_id BIGINT,
+    PRIMARY KEY (game_id, card_id),
+    CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (game_id) REFERENCES Game (id) ON DELETE CASCADE ON UPDATE NO ACTION,
+    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
-CREATE TABLE attack_offensive_cards
-(
-    attack_id BIGINT,
-    offensive_card_id   BIGINT,
-    PRIMARY KEY (attack_id, offensive_card_id),
-    CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (attack_id) REFERENCES Attack (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (offensive_card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
-
-)

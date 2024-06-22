@@ -1,6 +1,5 @@
 package com.example.tgbotcardsonline.service.impl;
 
-import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.response.Card;
@@ -14,10 +13,8 @@ import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.OnlinePlayerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     @Override
     public OnlinePlayer createOnlinePlayer(Player player,String deckId){
         OnlinePlayer onlinePlayer = onlinePlayerMapper.toOnlinePlayer(player);
-        DrawCardsResponse drawCardsResponse = getDrawCardsResponse(deckId);
+        DrawCardsResponse drawCardsResponse = getDrawCardsResponseToCreatePlayer(deckId);
         List<Card> savedCards = cardRepository.saveAll(drawCardsResponse.getCards());
         onlinePlayer.setCards(savedCards);
         onlinePlayerRepository.save(onlinePlayer);
@@ -45,7 +42,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         telegramBot.showAvailableCards(player.getPlayer().getChatId(),player.getCards());
     }
 
-    private DrawCardsResponse getDrawCardsResponse(String deckId) {
+    private DrawCardsResponse getDrawCardsResponseToCreatePlayer(String deckId) {
         DrawCardsResponse drawCardsResponse;
         try {
             drawCardsResponse = cardService.drawACard(deckId, 6);

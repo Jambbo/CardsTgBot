@@ -1,31 +1,29 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Game;
-import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.SearchRequest;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.repository.SearchRequestRepository;
-import com.example.tgbotcardsonline.service.AttackService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SearchRequestImpl implements SearchRequestService {
     private final SearchRequestRepository searchRequestRepository;
     private final GameService gameService;
     private final TelegramBot telegramBot;
-    private final AttackService attackService;
 
     @Override
     public void StartLookForRandomGame(Player player) {
@@ -48,17 +46,14 @@ public class SearchRequestImpl implements SearchRequestService {
 //                telegramBot.sendMessageToPlayer(player, "You already looking for  a game");
 //                return;
 //            }
-            Game game = gameService.createGame(player, opponent);
-            // Notify players about the game
-            telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
-            telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
-            notifyUsersAboutTrump(game.getPlayers(), game);
-            attackService.sendMessagesToPlayers(game, game.getActivePlayer());
+            Game game = gameService.createGame1v1ThrowIn(player, opponent);
+            notifyUsersAboutStartOfGame(player, opponent, game);
             searchRequestRepository.delete(searchRequest.get());
 
         }
     }
-    private void notifyUsersAboutTrump(List<OnlinePlayer> players, Game game) {
+
+    private void notifyUsersAboutStartOfGame(Player player, Player opponent, Game game) {
         Map<String, String> suitSymbols = new HashMap<>();
         suitSymbols.put("HEARTS", "♥");
         suitSymbols.put("DIAMONDS", "♦");
@@ -69,12 +64,12 @@ public class SearchRequestImpl implements SearchRequestService {
         String trumpName = trump.name().toUpperCase();
         String suitSymbol = suitSymbols.get(trumpName);
 
-        players.forEach(
-                oP -> {
-                    Player player = oP.getPlayer();
-                    telegramBot.sendMessageToPlayer(player,"Trump is: "+trump+" "+ suitSymbol);
-                }
-        );
+        telegramBot.sendMessageToPlayer(player, "Trump is: " + trump + " " + suitSymbol);
+        telegramBot.sendMessageToPlayer(opponent, "Trump is: " + trump + " " + suitSymbol);
+        telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
+        telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
+        telegramBot.showAvailableCards(player.getChatId(), player.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(opponent.getChatId(), opponent.getPlayerInGame().getCards());
     }
 
 }

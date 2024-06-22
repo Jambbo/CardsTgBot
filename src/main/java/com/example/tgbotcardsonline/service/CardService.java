@@ -11,6 +11,5 @@ public interface CardService {
 
     DrawCardsResponse drawACard(String deckId, int howMany);
 
-    @SneakyThrows
     Card getInputedCard(OnlinePlayer onlinePlayer, String callBackData);
 }
