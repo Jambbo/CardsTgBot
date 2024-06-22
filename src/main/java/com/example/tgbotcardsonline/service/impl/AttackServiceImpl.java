@@ -122,6 +122,9 @@ public class AttackServiceImpl implements AttackService {
         gameRepository.save(game);
     }
 
+
+
+
     private void refillPlayersCardsFromDeck(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
         for (OnlinePlayer player : game.getPlayers()) {

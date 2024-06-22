@@ -9,6 +9,7 @@ import com.example.tgbotcardsonline.repository.AttackRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.service.AttackService;
+import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
@@ -32,6 +33,7 @@ public class MessageProcessor {
     private final OnlinePlayerService onlinePlayerService;
     private final GameService gameService;
     private final GameRepository gameRepository;
+    private final CardService cardService;
 
     public void handleGameOperation(String messageText, Player player) {
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
@@ -39,7 +41,31 @@ public class MessageProcessor {
         if (messageText.equals("finish attack")) {
             attackService.finishAttack(onlinePlayer);
         }
+        if(messageText.equals("take cards")){
+            handleWithTakingCards(onlinePlayer);
+        }
         handleWithMove(messageText, onlinePlayer);
+    }
+
+    private void handleWithTakingCards(OnlinePlayer onlinePlayer) {
+        Game game = onlinePlayer.getGame();
+        boolean isDefender = game.getCurrentAttack().getDefender().equals(onlinePlayer);
+        List<OnlinePlayer> players = game.getPlayers();
+        if(isDefender) {
+            players.forEach(p -> {
+                boolean isLooser = p.equals(onlinePlayer);
+                if (isLooser) {
+                    List<Card> beaten = game.getCurrentAttack().getBeaten();
+                    p.getCards().addAll(beaten);
+                }
+                {
+                    if (p.getCards().size() < 6) {
+                        cardService.drawACard(game.getDeckId(), 6 - p.getCards().size());
+                    }
+                    onlinePlayerRepository.save(p);
+                }
+            });
+        }
     }
 
     public void handleGameOperationCallbackData(String callbackData, Player player) {
