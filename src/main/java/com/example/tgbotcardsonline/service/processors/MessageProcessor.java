@@ -58,12 +58,10 @@ public class MessageProcessor {
                     List<Card> beaten = game.getCurrentAttack().getBeaten();
                     p.getCards().addAll(beaten);
                 }
-                {
                     if (p.getCards().size() < 6) {
-                        cardService.drawACard(game.getDeckId(), 6 - p.getCards().size());
+                        attackService.refillPlayersCardsFromDeck(game);
                     }
                     onlinePlayerRepository.save(p);
-                }
             });
         }
     }

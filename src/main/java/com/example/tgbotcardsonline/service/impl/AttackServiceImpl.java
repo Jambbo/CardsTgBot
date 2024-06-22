@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.isNull;
 
@@ -99,22 +98,6 @@ public class AttackServiceImpl implements AttackService {
         Card offensiveCards = currentAttack.getOffensiveCard();
         List<Card> defensiveCards = currentAttack.getBeaten();
 
-        // Determine if defender took the cards
-        boolean defenderTookCards = (defensiveCards.size() < offensiveCards.size());
-
-
-        // Clear the current attack
-        currentAttack.setOffensiveCard(null);
-        currentAttack.setBeaten(null);
-
-        // Switch turns: if the defender successfully defended, he attack next; otherwise, the attacker continues
-        if (defenderTookCards) {
-            OnlinePlayer nextPlayer = getDefender(game);
-            game.setActivePlayer(nextPlayer);
-        } else {
-            OnlinePlayer nextPlayer = getNextPlayer(game);
-            game.setActivePlayer(nextPlayer);
-        }
 
         // Draw cards from the deck if needed
         refillPlayersCardsFromDeck(game);
@@ -124,24 +107,50 @@ public class AttackServiceImpl implements AttackService {
 
 
 
-
-    private void refillPlayersCardsFromDeck(Game game) {
+    @Override
+    public void refillPlayersCardsFromDeck(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
+            setCardsToAttackOrDefender(game.getActivePlayer(),game,deckResponse);
+        OnlinePlayer defender = game.getCurrentAttack().getDefender();
         for (OnlinePlayer player : game.getPlayers()) {
-            while (player.getCards().size() < 6 && deckResponse.getRemaining() > 0) {
-                DrawCardsResponse drawCardsResponse = cardsClient.contactToDrawACard(game.getDeckId(), 1);
-                deckResponse.setRemaining(drawCardsResponse.getRemaining());
-                Card card = drawCardsResponse.getCards().get(0);
-                card.setOnlinePlayer(player);
-                player.getCards().add(card);
-                // не увверен что надо сохранять карту
-                cardRepository.save(card);
-                onlinePlayerRepository.save(player);
-                deckResponseRepository.save(deckResponse);
-            }
+            boolean isDefender = player.equals(defender);
+            int cardsAmountNeeded = 6 - player.getCards().size();
+                while (player.getCards().size() < 6 && deckResponse.getRemaining() > 0 && !isDefender) {
+                    if (cardsAmountNeeded > deckResponse.getRemaining()) {
+                        cardsAmountNeeded = deckResponse.getRemaining();
+                    }
+                    DrawCardsResponse drawCardsResponse = cardsClient.contactToDrawACard(game.getDeckId(), cardsAmountNeeded);
+                    deckResponse.setRemaining(drawCardsResponse.getRemaining());
+                    Card card = drawCardsResponse.getCards().get(0);
+                    card.setOnlinePlayer(player);
+                    player.getCards().add(card);
+                    // не увверен что надо сохранять карту
+                    cardRepository.save(card);
+                    deckResponseRepository.save(deckResponse);
+                }
+
+            onlinePlayerRepository.save(player);
         }
+        setCardsToAttackOrDefender(defender,game,deckResponse);
     }
 
+    public void setCardsToAttackOrDefender(OnlinePlayer onlinePlayer, Game game, DeckResponse deckResponse){
+        OnlinePlayer activePlayer = game.getActivePlayer();
+        OnlinePlayer defender = game.getCurrentAttack().getDefender();
+        if (deckResponse.getRemaining() != 0) {
+        if(onlinePlayer.equals(activePlayer)) {
+                setCardsToPlayer(activePlayer, deckResponse, game);
+        }else if(onlinePlayer.equals(defender)){
+               setCardsToPlayer(defender, deckResponse, game);
+        }
+        }
+    }
+    public void setCardsToPlayer(OnlinePlayer onlinePlayer, DeckResponse deckResponse, Game game){
+        int cardsNeeded = 6 - onlinePlayer.getCards().size();
+        if (cardsNeeded > deckResponse.getRemaining()) cardsNeeded = deckResponse.getRemaining();
+        DrawCardsResponse drawCardsResponseForAttacker = cardsClient.contactToDrawACard(game.getDeckId(), cardsNeeded);
+        onlinePlayer.setCards(drawCardsResponseForAttacker.getCards());
+    }
 
     @Override
     @Transactional

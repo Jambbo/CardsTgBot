@@ -18,5 +18,7 @@ public interface AttackService {
 
     void finishAttack(OnlinePlayer onlinePlayer);
 
+    void refillPlayersCardsFromDeck(Game game);
+
     void makeMove(OnlinePlayer onlinePlayer, String cardCode);
 }
