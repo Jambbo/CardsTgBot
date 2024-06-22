@@ -11,6 +11,7 @@ import com.example.tgbotcardsonline.model.response.DeckResponse;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.AttackService;
+import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class AttackServiceImpl implements AttackService {
     private final CardRepository cardRepository;
     private final DeckResponseRepository deckResponseRepository;
     private final CardsClient cardsClient;
+    private final CardService cardService;
 
     public Attack createAttack(Game game) {
         OnlinePlayer attacker = countWhoAttackFirst(game);
@@ -47,6 +49,7 @@ public class AttackServiceImpl implements AttackService {
                 .game(game)
                 .build();
     }
+
     @Override
     public void sendMessagesToPlayers(Game game, OnlinePlayer attacker) {
         game.getPlayers().forEach(oP -> {
@@ -93,7 +96,7 @@ public class AttackServiceImpl implements AttackService {
     public void finishAttack(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
         Attack currentAttack = game.getCurrentAttack();
-        List<Card> offensiveCards = currentAttack.getOffensiveCards();
+        Card offensiveCards = currentAttack.getOffensiveCard();
         List<Card> defensiveCards = currentAttack.getBeaten();
 
         // Determine if defender took the cards
@@ -101,10 +104,10 @@ public class AttackServiceImpl implements AttackService {
 
 
         // Clear the current attack
-        currentAttack.setOffensiveCards(new ArrayList<>());
-        currentAttack.setBeaten(new ArrayList<>());
+        currentAttack.setOffensiveCard(null);
+        currentAttack.setBeaten(null);
 
-        // Switch turns: if the defender successfully defended, they attack next; otherwise, the attacker continues
+        // Switch turns: if the defender successfully defended, he attack next; otherwise, the attacker continues
         if (defenderTookCards) {
             OnlinePlayer nextPlayer = getDefender(game);
             game.setActivePlayer(nextPlayer);
@@ -114,23 +117,26 @@ public class AttackServiceImpl implements AttackService {
         }
 
         // Draw cards from the deck if needed
-        drawCardsFromDeck(game);
+        refillPlayersCardsFromDeck(game);
 
         gameRepository.save(game);
     }
 
-    private void drawCardsFromDeck(Game game) {
+    private void refillPlayersCardsFromDeck(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
         for (OnlinePlayer player : game.getPlayers()) {
             while (player.getCards().size() < 6 && deckResponse.getRemaining() > 0) {
                 DrawCardsResponse drawCardsResponse = cardsClient.contactToDrawACard(game.getDeckId(), 1);
+                deckResponse.setRemaining(drawCardsResponse.getRemaining());
                 Card card = drawCardsResponse.getCards().get(0);
-                player.getCards().add(card);
                 card.setOnlinePlayer(player);
+                player.getCards().add(card);
+                // не увверен что надо сохранять карту
                 cardRepository.save(card);
+                onlinePlayerRepository.save(player);
+                deckResponseRepository.save(deckResponse);
             }
         }
-        deckResponseRepository.save(deckResponse);
     }
 
 
@@ -138,76 +144,79 @@ public class AttackServiceImpl implements AttackService {
     @Transactional
     public void makeMove(OnlinePlayer onlinePlayer, String callBackData) {
         Game game = onlinePlayer.getGame();
+        Attack currentAttack = game.getCurrentAttack();
         Player currentPlayer = onlinePlayer.getPlayer();
         if (!isPlayerTurn(onlinePlayer)) {
             telegramBot.sendMessageToPlayer(currentPlayer, "It's not your turn!");
             return;
         }
-        //TODO: !!!
-        Card card = cardRepository.findByCode(callBackData);
-        if(isNull(card)){
+        Card card = cardService.getInputedCard(onlinePlayer, callBackData);
+        if (isNull(card)) {
             throw new IllegalArgumentException("Invalid card code: " + callBackData);
         }
 
-        Attack currentAttack = game.getCurrentAttack();
-        boolean isDefending = currentAttack.getOffensiveCards().size() > currentAttack.getBeaten().size();
-try {
-    if (isDefending) {
-        if (!isDefenseMoveValid(currentAttack, card)) {
-            telegramBot.sendMessageToPlayer(currentPlayer, "Invalid defense move!");
-            return;
-        }
+        boolean isDefending = onlinePlayer == currentAttack.getDefender();
+        try {
+            if (isDefending) {
+                if (!isDefenseMoveValid(currentAttack, card)) {
+                    telegramBot.sendMessageToPlayer(currentPlayer, "Invalid defense move!");
+                    return;
+                }
 
-        currentAttack.getBeaten().add(card);
-        updateGameState(game, onlinePlayer, card);
-        notifyPlayers(game, onlinePlayer, callBackData);
+                currentAttack.getBeaten().add(card);
+                currentAttack.getBeaten().add(currentAttack.getOffensiveCard());
 
-        if (isAttackFinished(game, callBackData)) {
-            finishAttack(onlinePlayer);
-        } else {
-            notifyPlayers(game, onlinePlayer, callBackData);
-        }
-    } else {
-        if (!isAttackMoveValid(currentAttack, card)) {
-            telegramBot.sendMessageToPlayer(currentPlayer, "Invalid attack move!");
-            return;
-        }
-        currentAttack.getOffensiveCards().add(card);
-        updateGameState(game, onlinePlayer, card);
-        switchTurns(game);
-        notifyPlayers(game, onlinePlayer, callBackData);
-    }
-    if (isDefending && currentAttack.getBeaten().isEmpty()) {
-        finishAttackDueToNoDefense(game);
-    }
+                updateGameStateAfterDefending(game, onlinePlayer, card);
+                notifyPlayers(game, onlinePlayer, callBackData);
 
-}catch (Exception e){
-    log.error("Problem in makeMove()");
-    e.getLocalizedMessage();
-}
-        gameRepository.save(game);
+                if (canFinishAttack(game)) {
+                    finishAttack(onlinePlayer);
+                } else {
+                    notifyPlayers(game, onlinePlayer, callBackData);
+                }
+            } else {
+                if (!isAttackMoveValid(currentAttack, card)) {
+                    telegramBot.sendMessageToPlayer(currentPlayer, "Invalid attack move!");
+                    return;
+                }
+                updateGameStateAfterAttack(game, onlinePlayer, card);
+
+                notifyPlayers(game, onlinePlayer, callBackData);
+            }
+            if (isDefending && currentAttack.getBeaten().isEmpty()) {
+                finishAttackDueToNoDefense(game);
+            }
+
+            switchTurns(game);
+            // точно нужно?
+            gameRepository.save(game);
+
+        } catch (Exception e) {
+            log.error("Problem in makeMove()");
+            e.getLocalizedMessage();
+        }
     }
 
     private void finishAttackDueToNoDefense(Game game) {
         Attack currentAttack = game.getCurrentAttack();
-        List<Card> offensiveCards = currentAttack.getOffensiveCards();
-        List<Card> defensiveCards = currentAttack.getBeaten();
+        Card offensiveCard = currentAttack.getOffensiveCard();
+        List<Card> beaten = currentAttack.getBeaten();
 
         // Transfer all cards to the defending player
         OnlinePlayer defendingPlayer = getDefender(game);
-        defendingPlayer.getCards().addAll(offensiveCards);
-        defendingPlayer.getCards().addAll(defensiveCards);
+        defendingPlayer.getCards().add(offensiveCard);
+        defendingPlayer.getCards().addAll(beaten);
 
         // Clear offensive and defensive cards
-        offensiveCards.clear();
-        defensiveCards.clear();
+        currentAttack.setOffensiveCard(null);
+        currentAttack.setBeaten(null);
 
         // Switch turns to the attacker
         OnlinePlayer nextPlayer = getNextPlayer(game);
         game.setActivePlayer(nextPlayer);
 
         // Draw cards from the deck if needed
-        drawCardsFromDeck(game);
+        refillPlayersCardsFromDeck(game);
 
         gameRepository.save(game);
         onlinePlayerRepository.save(defendingPlayer);
@@ -220,6 +229,7 @@ try {
         int currentPlayerIndex = players.indexOf(currentPlayer);
         int nextPlayerIndex = (currentPlayerIndex + 1) % players.size();
         game.setActivePlayer(players.get(nextPlayerIndex));
+        gameRepository.save(game);
     }
 
     private void handleGameOver(Game game) {
@@ -229,14 +239,15 @@ try {
             telegramBot.sendMessageToPlayer(p, "Game over!");
         }
     }
+
     //TODO: fix bug with remaining in DeckResponse
     private boolean isGameOver(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
-        if(deckResponse.getRemaining()<1){
+        if (deckResponse.getRemaining() < 1) {
             return game.getPlayers().stream()
                     .anyMatch(player -> player.getCards().isEmpty());
         }
-            return false;
+        return false;
     }
 
     private void notifyPlayers(Game game, OnlinePlayer onlinePlayer, String cardCode) {
@@ -245,7 +256,7 @@ try {
         players.forEach(
                 oP -> {
                     boolean isOpponent = !oP.equals(currentPlayer);
-                    if(isOpponent){
+                    if (isOpponent) {
                         telegramBot.sendMessageToPlayer(oP.getPlayer(), currentPlayer.getUsername() + " played: " + cardCode);
                     }
                 }
@@ -253,10 +264,36 @@ try {
 //        telegramBot.sendMessageToPlayer(currentPlayer, "You played: " + cardCode);
     }
 
-    private void updateGameState(Game game, OnlinePlayer onlinePlayer, Card card) {
+    private void updateGameStateAfterAttack(Game game, OnlinePlayer onlinePlayer, Card card) {
+        Attack currentAttack = game.getCurrentAttack();
+
+        // add attack cards
+        currentAttack.setOffensiveCard(card);
+
+
+        //remove player's card
         onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
+
+        // save !!! (your the worst enemy...)
+//        cardRepository.save(card); do we need this ? im not sure
+        attackRepository.save(currentAttack);
+        onlinePlayerRepository.save(onlinePlayer);
+    }
+
+    private void updateGameStateAfterDefending(Game game, OnlinePlayer onlinePlayer, Card card) {
+        Attack currentAttack = game.getCurrentAttack();
+
+        // add cards to beaten
+        currentAttack.getBeaten().add(card);
+        currentAttack.getBeaten().add(currentAttack.getOffensiveCard());
+
+        //remove attacked  and player's card
+        onlinePlayer.getCards().removeIf(c -> c.getCode().equals(card.getCode()));
+        currentAttack.setOffensiveCard(null);
         card.setOnlinePlayer(null);
+
         cardRepository.save(card);
+        attackRepository.save(currentAttack);
         onlinePlayerRepository.save(onlinePlayer);
     }
 
@@ -276,38 +313,33 @@ try {
     }
 
     private boolean isAttackMoveValid(Attack attack, Card card) {
-        List<Card> offensiveCards = attack.getOffensiveCards();
+        List<Card> beatenCards = attack.getBeaten();
 
         // First attacking move is always valid
-        if (offensiveCards.isEmpty()) {
+        if (isNull(beatenCards)) {
             return true;
         }
 
         // Subsequent attacking move must match one of the ranks of the current attack
-        return offensiveCards.stream().anyMatch(c -> c.getValue().equals(card.getValue()));
+        return beatenCards.stream().anyMatch(c -> c.getValue().equals(card.getValue()));
     }
 
     private boolean isDefenseMoveValid(Attack attack, Card card) {
-        List<Card> offensiveCards = attack.getOffensiveCards();
+        Card offensiveCard = attack.getOffensiveCard();
         List<Card> defensiveCards = attack.getBeaten();
-
-        // The defender must defend against the last attacking card
-        Card lastOffensiveCard = offensiveCards.get(offensiveCards.size() - 1);
 
         // Check if the card being played can beat the attacking card
         Suit trumpSuit = attack.getGame().getTrump();
 
-        boolean isSameSuitAndHigher = card.getSuit().equals(lastOffensiveCard.getSuit()) && card.getValue().compareTo(lastOffensiveCard.getValue()) > 0;
-        boolean isTrumpAndNotTrump = card.getSuit().equals(trumpSuit) && !lastOffensiveCard.getSuit().equals(trumpSuit);
+        boolean isSameSuitAndHigher = card.getSuit().equals(offensiveCard.getSuit()) && card.getValue().compareTo(offensiveCard.getValue()) > 0;
+        boolean isTrumpAndNotTrump = card.getSuit().equals(trumpSuit) && !offensiveCard.getSuit().equals(trumpSuit);
 
         return isSameSuitAndHigher || isTrumpAndNotTrump;
     }
-    private boolean isAttackFinished(Game game, String callbackData) {
-        Attack currentAttack = game.getCurrentAttack();
-        List<Card> offensiveCards = currentAttack.getOffensiveCards();
-        List<Card> defensiveCards = currentAttack.getBeaten();
 
-        return (defensiveCards.size() == offensiveCards.size() && callbackData.equals("finish"));
+    private boolean canFinishAttack(Game game) {
+        Attack currentAttack = game.getCurrentAttack();
+        return (isNull(currentAttack.getOffensiveCard()) && !isNull(currentAttack.getBeaten()));
     }
 
     public static OnlinePlayer getNextPlayer(Game game) {
@@ -324,6 +356,7 @@ try {
         int defenderIndex = (index + 1) % onlinePlayers.size();
         return onlinePlayers.get(defenderIndex);
     }
+
     private boolean isPlayerTurn(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
         return game.getActivePlayer().equals(onlinePlayer);

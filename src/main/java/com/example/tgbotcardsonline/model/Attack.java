@@ -30,14 +30,9 @@ public class Attack {
     @JoinColumn(name = "active_player_id")
     // типо кто сейчас ходит
     private OnlinePlayer activePlayer;
-    @OneToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "attack_offensive_cards",
-            joinColumns = @JoinColumn(name = "attack_id"),
-            inverseJoinColumns = @JoinColumn(name = "offensive_card_id")
-    )
-    // карты которые используються для атаки(не только от атакуещего а еще может кто-то подкинул)
-    private List<Card> offensiveCards;
+    @OneToOne
+    @JoinColumn(name = "offensive_card_id")
+    private Card offensiveCard;
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "attack_beaten",

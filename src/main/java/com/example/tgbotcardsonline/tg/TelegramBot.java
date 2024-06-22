@@ -57,7 +57,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             System.out.println(update.getCallbackQuery().getData());
             System.out.println(update.getCallbackQuery().getMessage());
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
-            handleCallbackQuery(update.getCallbackQuery(), player);
+            getMessageProcessor().handleGameOperationCallbackData(update.getCallbackQuery().getData(), player);
             return;
         }
         if(update.hasMessage() && update.getMessage().hasText()){
@@ -95,10 +95,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 execute(sendMessage);
             }
         }
-    }
-    private void handleCallbackQuery(CallbackQuery callbackQuery, Player player) {
-        String callbackData = callbackQuery.getData();
-        getMessageProcessor().handleGameOperationCallbackData(callbackData, player);
     }
 
     @SneakyThrows

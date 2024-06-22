@@ -29,6 +29,7 @@ CREATE TABLE Attack
 (
     id BIGSERIAL PRIMARY KEY,
     game_id          INT,
+    offensive_card_id INT,
     attacker_id      INT,
     defender_id      INT,
     active_player_id INT
