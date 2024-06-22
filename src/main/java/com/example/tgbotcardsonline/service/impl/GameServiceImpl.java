@@ -2,6 +2,7 @@ package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
@@ -74,33 +75,67 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public void makeMove(Player player, String playerMove) {
+    public void makeMove(Player player, Card playerMove) {
         Game game = player.getPlayerInGame().getGame();
-        if(game.getAttacker().equals(player)){
-            if(isAttackMoveValid()) {
-                attackMove(game);
+        OnlinePlayer onlinePlayer = player.getPlayerInGame();
+        // if that's attack move
+        if (game.getAttacker().equals(onlinePlayer)) {
+            //check if valid attack move
+            if (isAttackMoveValid(game, playerMove)) {
+                attackMove(game,playerMove);
+            } else {
+                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + playerMove.getCode());
+                return;
             }
-        }else if(game.getDefender().equals(player)){
-            if(isDefenceMoveValid()) {
-                defenceMove(game);
+            // if that's defending move
+        } else if (game.getDefender().equals(onlinePlayer)) {
+            //if that's valid defence move
+            if (isDefenceMoveValid(game, playerMove)) {
+                defenceMove(game,playerMove);
+            } else {
+                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + playerMove.getCode());
+                return;
             }
+        } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
+    }
+
+
+    private boolean isDefenceMoveValid(Game game, Card defendingCard) {
+        Suit trumpSuit = game.getTrump();
+        Card attackingCard = game.getOffensiveCard();
+
+        // If the defending card is of the same suit and has a higher rank
+        if (attackingCard.getSuit().equals(defendingCard.getSuit()) &&
+                defendingCard.getValue().isHigherThan(attackingCard.getValue())) {
+            return true;
         }
 
+        // If the defending card is a trump card and the attacking card is not a trump card
+        if (defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit)) {
+            return true;
+        }
+
+        // If neither condition is met, the defense move is not valid
+        return false;
     }
 
-    private boolean isDefenceMoveValid() {
+    private boolean isAttackMoveValid(Game game, Card playerMove) {
+        List<Card> beatenCards = game.getBeaten();
+
+        // If there are no beaten cards, it's the first attack, which is always valid
+        if (beatenCards.isEmpty()) {
+            return true;
+        }
+
+        // Subsequent attacking move must match one of the ranks of the current attack
+        return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
+    }
+
+    private void attackMove(Game game,Card move) {
 
     }
 
-    private boolean isAttackMoveValid() {
-
-    }
-
-    private void attackMove(Game game) {
-
-    }
-
-    private void defenceMove(Game game) {
+    private void defenceMove(Game game,Card move) {
 
     }
 
@@ -111,7 +146,7 @@ public class GameServiceImpl implements GameService {
     }
 
     public OnlinePlayer countWhoAttackFirst(OnlinePlayer player1, OnlinePlayer player2) {
-        List<OnlinePlayer> onlinePlayers = List.of(player1,player2);
+        List<OnlinePlayer> onlinePlayers = List.of(player1, player2);
         Suit trump = getRandomTrump();
 
         return onlinePlayers.stream()
@@ -125,7 +160,4 @@ public class GameServiceImpl implements GameService {
                     return onlinePlayers.get(random.nextInt(onlinePlayers.size()));
                 });
     }
-
-
-
 }
