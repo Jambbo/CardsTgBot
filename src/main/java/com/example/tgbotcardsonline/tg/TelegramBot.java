@@ -51,8 +51,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if(update.hasCallbackQuery()){
             Long chatId = update.getCallbackQuery().getMessage().getChatId();
-            log.info(update.getCallbackQuery().getData());
-            log.info(update.getCallbackQuery().getMessage().toString());
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
             getMessageProcessor().handleWithMove(update.getCallbackQuery().getData(), player);
             return;
@@ -65,32 +63,35 @@ public class TelegramBot extends TelegramLongPollingBot {
             SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
                     .chatId(chatId.toString());
 
-
             if (player.isInGame()){
                 getMessageProcessor().handleGameOperation(messageText, player); // process game
                 return;
             }
-            switch (messageText) { // process commands
-                case "/start":
-                    messageBuilder.text("Welcome! " + player.getUsername() + "\n Let's play!");
-
-                    break;
-                case "/aboba":
-                    messageBuilder.text("aboba");
-                    break;
-                case "/startGame":
-                    getSearchRequestService().StartLookForRandomGame(player);
-                    break;
-                default:
-
-                    messageBuilder.text("You sent: " + messageText);
-
-                    break;
-            }
+            handleCommands(messageText, messageBuilder, player);
             SendMessage sendMessage = messageBuilder.build();
             if (!isNull(sendMessage)) {
                 execute(sendMessage);
             }
+        }
+    }
+
+    private void handleCommands(String messageText, SendMessage.SendMessageBuilder messageBuilder, Player player) {
+        switch (messageText) { // process commands
+            case "/start":
+                messageBuilder.text("Welcome! " + player.getUsername() + "\n Let's play!");
+
+                break;
+            case "/aboba":
+                messageBuilder.text("aboba");
+                break;
+            case "/startGame":
+                getSearchRequestService().StartLookForRandomGame(player);
+                break;
+            default:
+
+                messageBuilder.text("You sent: " + messageText);
+
+                break;
         }
     }
 

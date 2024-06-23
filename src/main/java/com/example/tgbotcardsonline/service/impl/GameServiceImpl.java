@@ -46,11 +46,12 @@ public class GameServiceImpl implements GameService {
     }
 
     private Game buildGame(String deck, OnlinePlayer player1, OnlinePlayer player2) {
-        OnlinePlayer firstAttacker = countWhoAttackFirst(player1, player2);
+        Suit trump = getRandomTrump();
+        OnlinePlayer firstAttacker = countWhoAttackFirst(player1, player2, trump);
         OnlinePlayer defender = firstAttacker.equals(player1) ? player2 : player1;
         return Game.builder()
                 .deckId(deck)
-                .trump(getRandomTrump())
+                .trump(trump)
                 .attacker(firstAttacker)
                 .defender(defender)
                 .activePlayer(firstAttacker)
@@ -84,7 +85,7 @@ public class GameServiceImpl implements GameService {
             if (isAttackMoveValid(game, playerMove)) {
                 attackMove(game,playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + playerMove.getCode());
+                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + getPrettyMove(playerMove));
                 return;
             }
             // if that's defending move
@@ -93,7 +94,7 @@ public class GameServiceImpl implements GameService {
             if (isDefenceMoveValid(game, playerMove)) {
                 defenceMove(game,playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + playerMove.getCode());
+                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + getPrettyMove(playerMove));
                 return;
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
@@ -132,11 +133,55 @@ public class GameServiceImpl implements GameService {
     }
 
     private void attackMove(Game game,Card move) {
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        Player attackerPlayer = attacker.getPlayer();
+        Player defenderPlayer = defender.getPlayer();
 
+        updateOnlinePlayerState(attacker, move);
+        telegramBot.sendMessageToPlayer(defenderPlayer, attackerPlayer.getUsername()+" attacked: "+getPrettyMove(move));
+        telegramBot.sendMessageToPlayer(attackerPlayer, attackerPlayer.getUsername()+" attacked: "+getPrettyMove(move));
+        game.setActivePlayer(defender);
+        game.setOffensiveCard(move);
+        gameRepository.save(game);
     }
 
     private void defenceMove(Game game,Card move) {
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        Player attackerPlayer = attacker.getPlayer();
+        Player defenderPlayer = defender.getPlayer();
 
+        telegramBot.sendMessageToPlayer(defenderPlayer, defenderPlayer.getUsername()+" defended: "+getPrettyMove(move));
+        telegramBot.sendMessageToPlayer(attackerPlayer, defenderPlayer.getUsername()+" defended: "+getPrettyMove(move));
+
+        updateOnlinePlayerState(defender, move);
+        List<Card> beaten = game.getBeaten();
+        beaten.add(game.getOffensiveCard());
+        beaten.add(move);
+        game.setOffensiveCard(null);
+        game.setBeaten(beaten);
+        game.setActivePlayer(attacker);
+        gameRepository.save(game);
+    }
+
+    private String getPrettyMove(Card move){
+        Map<String, String> suitSymbols = new HashMap<>();
+        suitSymbols.put("H", "♥");
+        suitSymbols.put("D", "♦");
+        suitSymbols.put("S", "♠");
+        suitSymbols.put("C", "♣");
+
+        String cardCode = move.getCode();
+        String cardValue = cardCode.substring(0, cardCode.length() - 1);
+        if(cardValue.equals("0")) cardValue="10";
+        String cardSuit = cardCode.substring(cardCode.length() - 1);
+        return cardValue + suitSymbols.get(cardSuit);
+    }
+
+    private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
+        player.getCards().remove(move);
+        onlinePlayerRepository.save(player);
     }
 
     public Suit getRandomTrump() {
@@ -145,10 +190,8 @@ public class GameServiceImpl implements GameService {
         return suits[random.nextInt(suits.length)];
     }
 
-    public OnlinePlayer countWhoAttackFirst(OnlinePlayer player1, OnlinePlayer player2) {
+    public OnlinePlayer countWhoAttackFirst(OnlinePlayer player1, OnlinePlayer player2, Suit trump) {
         List<OnlinePlayer> onlinePlayers = List.of(player1, player2);
-        Suit trump = getRandomTrump();
-
         return onlinePlayers.stream()
                 .flatMap(player -> player.getCards().stream()
                         .filter(card -> card.isTrump(trump))

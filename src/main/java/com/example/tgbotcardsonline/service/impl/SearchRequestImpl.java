@@ -1,6 +1,7 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.SearchRequest;
 import com.example.tgbotcardsonline.model.enums.Suit;
@@ -54,6 +55,8 @@ public class SearchRequestImpl implements SearchRequestService {
     }
 
     private void notifyUsersAboutStartOfGame(Player player, Player opponent, Game game) {
+        Player firstAttacker = game.getActivePlayer().getPlayer();
+        Player firstDefender = game.getDefender().getPlayer();
         Map<String, String> suitSymbols = new HashMap<>();
         suitSymbols.put("HEARTS", "♥");
         suitSymbols.put("DIAMONDS", "♦");
@@ -70,6 +73,8 @@ public class SearchRequestImpl implements SearchRequestService {
         telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
         telegramBot.showAvailableCards(player.getChatId(), player.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(opponent.getChatId(), opponent.getPlayerInGame().getCards());
+        telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!");
+        telegramBot.sendMessageToPlayer(firstDefender, "Now is "+firstAttacker.getUsername()+" turn");
     }
 
 }
