@@ -164,8 +164,8 @@ public class GameServiceImpl implements GameService {
         game.setActivePlayer(attacker);
         gameRepository.save(game);
     }
-
-    private String getPrettyMove(Card move){
+    @Override
+    public String getPrettyMove(Card move){
         Map<String, String> suitSymbols = new HashMap<>();
         suitSymbols.put("H", "♥");
         suitSymbols.put("D", "♦");

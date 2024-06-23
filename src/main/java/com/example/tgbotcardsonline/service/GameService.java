@@ -13,4 +13,6 @@ public interface GameService {
 
 
     void makeMove(Player player, Card playerMove);
+
+    String getPrettyMove(Card move);
 }
