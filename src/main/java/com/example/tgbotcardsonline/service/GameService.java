@@ -3,6 +3,7 @@ package com.example.tgbotcardsonline.service;
 import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
+import com.example.tgbotcardsonline.model.response.Card;
 
 public interface GameService {
 
@@ -10,6 +11,6 @@ public interface GameService {
 
     void surrend(OnlinePlayer player);
 
-    void makeMove(Player player, String playerMove);
 
+    void makeMove(Player player, Card playerMove);
 }

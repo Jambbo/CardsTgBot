@@ -36,7 +36,7 @@ public class MessageProcessor {
         if (messageText.equals("finish attack")) {
 
         }
-        if(messageText.equals("take cards")){
+        if (messageText.equals("take cards")) {
 
         }
 
@@ -49,19 +49,18 @@ public class MessageProcessor {
             telegramBot.sendMessageToPlayer(player, callbackData + " is not a card!");
         }
 
-        if(!isPlayersMove(player, game)){
-            telegramBot.sendMessageToPlayer(player,"It is not your turn.");
+        if (!isPlayersMove(player, game)) {
+            telegramBot.sendMessageToPlayer(player, "It is not your turn.");
             return;
         }
 
-        boolean playerHasThisCard = checkIfPlayerHasThisCard(player.getPlayerInGame().getCards(), callbackData);
-        if(!playerHasThisCard){
-            telegramBot.sendMessageToPlayer(player,"You do not have this card.");
+        Card playersCard = checkIfPlayerHasThisCard(player.getPlayerInGame().getCards(), callbackData);
+        if (playersCard == null) {
+            telegramBot.sendMessageToPlayer(player, "You do not have this card.");
             return;
         }
-        gameService.makeMove(player, playerMove);
+        gameService.makeMove(player, playersCard);
     }
-
 
 
     private boolean isPlayersMove(Player player, Game game) {
@@ -84,17 +83,13 @@ public class MessageProcessor {
     }
 
 
-    public boolean checkIfPlayerHasThisCard(List<Card> cards, String messageText) {
-        List<Card> list = new ArrayList<>();
-        cards.forEach(
-                c -> {
-                    boolean equals = c.getCode().equals(messageText);
-                    if (equals) {
-                        list.add(c);
-                    }
-                }
-        );
-        return !list.isEmpty();
+    public Card checkIfPlayerHasThisCard(List<Card> cards, String messageText) {
+        for (Card card : cards) {
+            if (card.getCode().equals(messageText)) {
+                return card;
+            }
+        }
+        return null;
     }
 
 }
