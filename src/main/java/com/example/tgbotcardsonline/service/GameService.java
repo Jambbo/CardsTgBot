@@ -14,5 +14,11 @@ public interface GameService {
 
     void makeMove(Player player, Card playerMove);
 
-    String getPrettyMove(Card move);
+    void attackMove(Game game, Card move);
+
+    void defenceMove(Game game, Card move);
+
+    void finishAttack(Player player, Game game);
+
+    void takeCards(Player player);
 }
