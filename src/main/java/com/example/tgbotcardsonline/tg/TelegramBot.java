@@ -49,13 +49,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     @SneakyThrows
     public void onUpdateReceived(Update update) {
-        if(update.hasCallbackQuery()){
+        if (update.hasCallbackQuery()) {
             Long chatId = update.getCallbackQuery().getMessage().getChatId();
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
             getMessageProcessor().handleWithMove(update.getCallbackQuery().getData(), player);
             return;
         }
-        if(update.hasMessage() && update.getMessage().hasText()){
+        if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
@@ -63,7 +63,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
                     .chatId(chatId.toString());
 
-            if (player.isInGame()){
+            if (player.isInGame()) {
                 getMessageProcessor().handleGameOperation(messageText, player); // process game
                 return;
             }
@@ -88,7 +88,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 getSearchRequestService().StartLookForRandomGame(player);
                 break;
             default:
-
                 messageBuilder.text("You sent: " + messageText);
 
                 break;
@@ -109,6 +108,14 @@ public class TelegramBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+    @SneakyThrows
+    @Async
+    public void sendMessageToBothPlayers(Game game, String message) {
+        sendMessageToPlayer(game.getAttacker().getPlayer(), message);
+        sendMessageToPlayer(game.getDefender().getPlayer(), message);
+    }
+
     public void showAvailableCards(long chatId, List<Card> cards) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
@@ -126,7 +133,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         for (Card card : cards) {
             String cardCode = card.getCode();
             String cardValue = cardCode.substring(0, cardCode.length() - 1);
-            if(cardValue.equals("0")) cardValue = "10";
+            if (cardValue.equals("0")) cardValue = "10";
             String cardSuit = cardCode.substring(cardCode.length() - 1);
             InlineKeyboardButton button = new InlineKeyboardButton();
             button.setText(cardValue + suitSymbols.get(cardSuit));

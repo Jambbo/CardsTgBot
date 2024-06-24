@@ -6,12 +6,15 @@ import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.repository.PlayerRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
+import com.example.tgbotcardsonline.service.validator.MoveValidator;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +27,13 @@ import java.util.*;
 @Slf4j
 public class GameServiceImpl implements GameService {
     private final GameRepository gameRepository;
-    private final CardsClient cardsClient;
     private final CardService cardService;
     private final OnlinePlayerService onlinePlayerService;
     private final OnlinePlayerRepository onlinePlayerRepository;
     private final PlayerRepository playerRepository;
     private final TelegramBot telegramBot;
+    private final DeckResponseRepository deckResponseRepository;
+    private final MoveValidator moveValidator;
 
     @Override
     public Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer) {
@@ -82,78 +86,52 @@ public class GameServiceImpl implements GameService {
         // if that's attack move
         if (game.getAttacker().equals(onlinePlayer)) {
             //check if valid attack move
-            if (isAttackMoveValid(game, playerMove)) {
-                attackMove(game,playerMove);
+            if (moveValidator.isAttackMoveValid(game, playerMove)) {
+                attackMove(game, playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + getPrettyMove(playerMove));
+                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + moveValidator.getPrettyMove(playerMove));
                 return;
             }
             // if that's defending move
         } else if (game.getDefender().equals(onlinePlayer)) {
             //if that's valid defence move
-            if (isDefenceMoveValid(game, playerMove)) {
-                defenceMove(game,playerMove);
+            if (moveValidator.isDefenceMoveValid(game, playerMove)) {
+                defenceMove(game, playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + getPrettyMove(playerMove));
+                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + moveValidator.getPrettyMove(playerMove));
                 return;
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
     }
 
 
-    private boolean isDefenceMoveValid(Game game, Card defendingCard) {
-        Suit trumpSuit = game.getTrump();
-        Card attackingCard = game.getOffensiveCard();
-
-        // If the defending card is of the same suit and has a higher rank
-        if (attackingCard.getSuit().equals(defendingCard.getSuit()) &&
-                defendingCard.getValue().isHigherThan(attackingCard.getValue())) {
-            return true;
-        }
-
-        // If the defending card is a trump card and the attacking card is not a trump card
-        if (defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit)) {
-            return true;
-        }
-
-        // If neither condition is met, the defense move is not valid
-        return false;
-    }
-
-    private boolean isAttackMoveValid(Game game, Card playerMove) {
-        List<Card> beatenCards = game.getBeaten();
-
-        // If there are no beaten cards, it's the first attack, which is always valid
-        if (beatenCards.isEmpty()) {
-            return true;
-        }
-
-        // Subsequent attacking move must match one of the ranks of the current attack
-        return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
-    }
-
-    private void attackMove(Game game,Card move) {
+    @Override
+    public void attackMove(Game game, Card move) {
         OnlinePlayer attacker = game.getAttacker();
         OnlinePlayer defender = game.getDefender();
         Player attackerPlayer = attacker.getPlayer();
         Player defenderPlayer = defender.getPlayer();
 
         updateOnlinePlayerState(attacker, move);
-        telegramBot.sendMessageToPlayer(defenderPlayer, attackerPlayer.getUsername()+" attacked: "+getPrettyMove(move));
-        telegramBot.sendMessageToPlayer(attackerPlayer, attackerPlayer.getUsername()+" attacked: "+getPrettyMove(move));
+        telegramBot.sendMessageToPlayer(defenderPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.sendMessageToPlayer(attackerPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
         game.setActivePlayer(defender);
         game.setOffensiveCard(move);
         gameRepository.save(game);
+
+        if (moveValidator.isPlayerWon(attacker)) {
+            nominateWinner(attacker);
+        }
     }
 
-    private void defenceMove(Game game,Card move) {
+    @Override
+    public void defenceMove(Game game, Card move) {
         OnlinePlayer attacker = game.getAttacker();
         OnlinePlayer defender = game.getDefender();
         Player attackerPlayer = attacker.getPlayer();
         Player defenderPlayer = defender.getPlayer();
 
-        telegramBot.sendMessageToPlayer(defenderPlayer, defenderPlayer.getUsername()+" defended: "+getPrettyMove(move));
-        telegramBot.sendMessageToPlayer(attackerPlayer, defenderPlayer.getUsername()+" defended: "+getPrettyMove(move));
+        telegramBot.sendMessageToBothPlayers(game, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
 
         updateOnlinePlayerState(defender, move);
         List<Card> beaten = game.getBeaten();
@@ -163,20 +141,91 @@ public class GameServiceImpl implements GameService {
         game.setBeaten(beaten);
         game.setActivePlayer(attacker);
         gameRepository.save(game);
-    }
-    @Override
-    public String getPrettyMove(Card move){
-        Map<String, String> suitSymbols = new HashMap<>();
-        suitSymbols.put("H", "♥");
-        suitSymbols.put("D", "♦");
-        suitSymbols.put("S", "♠");
-        suitSymbols.put("C", "♣");
 
-        String cardCode = move.getCode();
-        String cardValue = cardCode.substring(0, cardCode.length() - 1);
-        if(cardValue.equals("0")) cardValue="10";
-        String cardSuit = cardCode.substring(cardCode.length() - 1);
-        return cardValue + suitSymbols.get(cardSuit);
+        if (moveValidator.isPlayerWon(defender)) {
+            nominateWinner(defender);
+        }
+    }
+
+    @Override
+    public void finishAttack(Player player, Game game) {
+        boolean possibleToFinishMove = moveValidator.isPossibleToFinishMove(player, game);
+        log.info(player.getUsername() + " trying to finish attack. That's possible ? =" + possibleToFinishMove);
+        if (possibleToFinishMove) {
+            game.setBeaten(new ArrayList<>());
+
+            switchTurnsAtFinishAttack(game);
+
+            refillCards(game);
+
+            gameRepository.save(game);
+
+            notifyPLayersAfterFinishAttack(game);
+        }
+    }
+
+    public void takeCards(Player player) {
+
+    }
+
+    private void notifyPLayersAfterFinishAttack(Game game) {
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
+        Player attacker = game.getAttacker().getPlayer();
+        Player defender = game.getDefender().getPlayer();
+
+        log.info("notify players...");
+
+        telegramBot.sendMessageToBothPlayers(game, "Cards beaten and " + attacker.getUsername() + " successfully defended!");
+        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
+        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
+
+        telegramBot.showAvailableCards(attacker.getId(), attacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(defender.getId(), defender.getPlayerInGame().getCards());
+    }
+
+    private void refillCards(Game game) {
+
+        OnlinePlayer attackerWithRefilledCards = refillCardsToPlayer(game.getAttacker());
+        OnlinePlayer defenderWithRefilledCards = refillCardsToPlayer(game.getDefender());
+
+
+        if (attackerWithRefilledCards.getCards().isEmpty()) {
+            nominateWinner(attackerWithRefilledCards);
+            return;
+        }
+        if (defenderWithRefilledCards.getCards().isEmpty()) {
+            nominateWinner(defenderWithRefilledCards);
+        }
+    }
+
+    private void nominateWinner(OnlinePlayer attackerWithRefilledCards) {
+        log.info(attackerWithRefilledCards.getPlayer().getUsername() + " WONNN ABOBABOABOAOBOABOABOA");
+    }
+
+    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
+        Game game = onlinePlayer.getGame();
+        if (moveValidator.isCardNeeded(onlinePlayer)) {
+            if (moveValidator.isPossibleToDrawCards(onlinePlayer)) {
+                cardService.drawACard(game.getDeckId(), 6 - onlinePlayer.getCards().size());
+            } else {
+                int validatedCountToDrawCards = moveValidator.getValidatedCountToDrawCards(onlinePlayer);
+                cardService.drawACard(game.getDeckId(), validatedCountToDrawCards);
+            }
+        }
+        log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
+        onlinePlayerRepository.save(onlinePlayer);
+        return onlinePlayer;
+    }
+
+    private void switchTurnsAtFinishAttack(Game game) {
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        game.setActivePlayer(defender);
+        game.setAttacker(defender);
+        game.setDefender(attacker);
+        log.info("last attacker was : " + attacker);
+        log.info("new attacker is: " + defender);
+        gameRepository.save(game);
     }
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
