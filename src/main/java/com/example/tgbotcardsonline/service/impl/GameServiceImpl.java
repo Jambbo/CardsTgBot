@@ -126,9 +126,7 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void defenceMove(Game game, Card move) {
-        OnlinePlayer attacker = game.getAttacker();
         OnlinePlayer defender = game.getDefender();
-        Player attackerPlayer = attacker.getPlayer();
         Player defenderPlayer = defender.getPlayer();
 
         telegramBot.sendMessageToBothPlayers(game, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
@@ -139,7 +137,6 @@ public class GameServiceImpl implements GameService {
         beaten.add(move);
         game.setOffensiveCard(null);
         game.setBeaten(beaten);
-        game.setActivePlayer(attacker);
         gameRepository.save(game);
 
         if (moveValidator.isPlayerWon(defender)) {
@@ -169,6 +166,9 @@ public class GameServiceImpl implements GameService {
         Game game = playerInGame.getGame();
         List<Card> beaten = game.getBeaten();
         playerInGame.getCards().addAll(beaten);
+        onlinePlayerRepository.save(playerInGame);
+        playerInGame.getCards().add(game.getOffensiveCard());
+        game.setOffensiveCard(null);
         game.setBeaten(new ArrayList<>());
         refillCards(game);
         onlinePlayerRepository.save(playerInGame);
@@ -254,9 +254,18 @@ public class GameServiceImpl implements GameService {
     }
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
-        player.removeCard(move);
-        cardRepository.delete(move);
+        Game game = player.getGame();
+        player.getCards().remove(move);
+        log.info("Deleted card "+move+" from player with id: "+player.getId());
+        Card cardInDb = cardRepository.findByCode(move.getCode());
+        cardInDb.setOnlinePlayer(null);
+        cardRepository.save(cardInDb);
         onlinePlayerRepository.save(player);
+        gameRepository.save(game);
+        log.info("cards players: ");
+        player.getCards().forEach(
+                c -> log.info(moveValidator.getPrettyMove(c))
+        );
     }
 
     public Suit getRandomTrump() {

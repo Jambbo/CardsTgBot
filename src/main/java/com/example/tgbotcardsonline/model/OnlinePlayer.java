@@ -1,6 +1,7 @@
 package com.example.tgbotcardsonline.model;
 
 import com.example.tgbotcardsonline.model.response.Card;
+import com.example.tgbotcardsonline.repository.GameRepository;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,5 +44,6 @@ public class OnlinePlayer {
     }
     public void removeCard(Card card){
         cards.remove(card);
+
     }
 }
