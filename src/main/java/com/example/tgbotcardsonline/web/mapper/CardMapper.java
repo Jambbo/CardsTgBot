@@ -25,7 +25,7 @@ public interface CardMapper {
             case "7" ->  "7";
             case "8" -> "8";
             case "9" ->  "9";
-            case "10" ->  "10";
+            case "10", "0" ->  "10";
             case "J" ->  "JACK";
             case "Q" ->  "QUEEN";
             case "K" -> "KING";

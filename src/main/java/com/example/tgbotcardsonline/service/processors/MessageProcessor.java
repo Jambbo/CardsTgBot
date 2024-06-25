@@ -80,7 +80,6 @@ public class MessageProcessor {
         gameService.makeMove(player, playersCard);
     }
 
-
     private boolean isPlayersMove(Player player, Game game) {
         OnlinePlayer activePlayerInGame = game.getActivePlayer();
         OnlinePlayer onlinePlayer = player.getPlayerInGame();

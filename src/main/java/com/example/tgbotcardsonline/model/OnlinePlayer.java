@@ -29,7 +29,7 @@ public class OnlinePlayer {
     )
     private Game game;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
             name = "op_cards",
             joinColumns =@JoinColumn(name = "online_player_id"),
@@ -40,5 +40,8 @@ public class OnlinePlayer {
     public void addCard(Card card) {
         cards.add(card);
         card.setOnlinePlayer(this);
+    }
+    public void removeCard(Card card){
+        cards.remove(card);
     }
 }

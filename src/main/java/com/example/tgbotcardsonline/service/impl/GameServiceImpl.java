@@ -7,10 +7,7 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
-import com.example.tgbotcardsonline.repository.DeckResponseRepository;
-import com.example.tgbotcardsonline.repository.GameRepository;
-import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
-import com.example.tgbotcardsonline.repository.PlayerRepository;
+import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
@@ -19,6 +16,7 @@ import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -34,6 +32,7 @@ public class GameServiceImpl implements GameService {
     private final TelegramBot telegramBot;
     private final DeckResponseRepository deckResponseRepository;
     private final MoveValidator moveValidator;
+    private final CardRepository cardRepository;
 
     @Override
     public Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer) {
@@ -102,6 +101,7 @@ public class GameServiceImpl implements GameService {
                 return;
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
+
     }
 
 
@@ -163,9 +163,34 @@ public class GameServiceImpl implements GameService {
             notifyPLayersAfterFinishAttack(game);
         }
     }
-
+    @Transactional
     public void takeCards(Player player) {
+        OnlinePlayer playerInGame = player.getPlayerInGame();
+        Game game = playerInGame.getGame();
+        List<Card> beaten = game.getBeaten();
+        playerInGame.getCards().addAll(beaten);
+        game.setBeaten(new ArrayList<>());
+        refillCards(game);
+        onlinePlayerRepository.save(playerInGame);
+        gameRepository.save(game);
+        notifyPlayersAfterTakeCards(game);
+    }
 
+    private void notifyPlayersAfterTakeCards(Game game){
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
+        Player attacker = game.getAttacker().getPlayer();
+        Player defender = game.getDefender().getPlayer();
+        game.setAttacker(attacker.getPlayerInGame());
+        game.setDefender(defender.getPlayerInGame());
+
+        log.info("notify players...");
+
+        telegramBot.sendMessageToBothPlayers(game, defender.getUsername() + " takes the cards!");
+        telegramBot.sendMessageToBothPlayers(game, "Now is "+attacker.getUsername()+" move");
+        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
+
+        telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
     }
 
     private void notifyPLayersAfterFinishAttack(Game game) {
@@ -179,8 +204,8 @@ public class GameServiceImpl implements GameService {
         telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
 
-        telegramBot.showAvailableCards(attacker.getId(), attacker.getPlayerInGame().getCards());
-        telegramBot.showAvailableCards(defender.getId(), defender.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
     }
 
     private void refillCards(Game game) {
@@ -229,7 +254,8 @@ public class GameServiceImpl implements GameService {
     }
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
-        player.getCards().remove(move);
+        player.removeCard(move);
+        cardRepository.delete(move);
         onlinePlayerRepository.save(player);
     }
 

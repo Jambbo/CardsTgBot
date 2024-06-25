@@ -10,11 +10,13 @@ import com.example.tgbotcardsonline.repository.PlayerRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
+import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import com.example.tgbotcardsonline.web.mapper.OnlinePlayerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,14 +27,23 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private final CardRepository cardRepository;
     private final TelegramBot telegramBot;
     private final PlayerRepository playerRepository;
+    private final CardMapper cardMapper;
 
 
     @Override
     public OnlinePlayer createOnlinePlayer(Player player,String deckId){
         OnlinePlayer onlinePlayer = onlinePlayerMapper.toOnlinePlayer(player);
+        onlinePlayerRepository.save(onlinePlayer);
         DrawCardsResponse drawCardsResponse = getDrawCardsResponseToCreatePlayer(deckId);
-        List<Card> savedCards = cardRepository.saveAll(drawCardsResponse.getCards());
-        onlinePlayer.setCards(savedCards);
+        List<Card> newCards = drawCardsResponse.getCards().stream().map(
+                card -> cardMapper.toCardFromStringCode(card.getCode())
+        ).toList();
+        newCards.forEach(card -> {
+            card.setOnlinePlayer(onlinePlayer);
+            onlinePlayer.addCard(card);  // This method should add the card to the list and set the onlinePlayer reference
+        });
+        cardRepository.saveAll(newCards);
+        onlinePlayer.setCards(newCards);
         onlinePlayerRepository.save(onlinePlayer);
         return onlinePlayer;
     }
