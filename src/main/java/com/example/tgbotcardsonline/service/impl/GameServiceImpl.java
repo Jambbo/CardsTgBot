@@ -82,26 +82,19 @@ public class GameServiceImpl implements GameService {
     public void makeMove(Player player, Card playerMove) {
         Game game = player.getPlayerInGame().getGame();
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
-        // if that's attack move
         if (game.getAttacker().equals(onlinePlayer)) {
-            //check if valid attack move
             if (moveValidator.isAttackMoveValid(game, playerMove)) {
                 attackMove(game, playerMove);
             } else {
                 telegramBot.sendMessageToPlayer(player, "You can't attack with + " + moveValidator.getPrettyMove(playerMove));
-                return;
             }
-            // if that's defending move
         } else if (game.getDefender().equals(onlinePlayer)) {
-            //if that's valid defence move
             if (moveValidator.isDefenceMoveValid(game, playerMove)) {
                 defenceMove(game, playerMove);
             } else {
                 telegramBot.sendMessageToPlayer(player, "You can't defend with + " + moveValidator.getPrettyMove(playerMove));
-                return;
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
-
     }
 
 
@@ -137,6 +130,7 @@ public class GameServiceImpl implements GameService {
         beaten.add(move);
         game.setOffensiveCard(null);
         game.setBeaten(beaten);
+        game.setActivePlayer(game.getAttacker());
         gameRepository.save(game);
 
         if (moveValidator.isPlayerWon(defender)) {
@@ -150,30 +144,35 @@ public class GameServiceImpl implements GameService {
         log.info(player.getUsername() + " trying to finish attack. That's possible ? =" + possibleToFinishMove);
         if (possibleToFinishMove) {
             game.setBeaten(new ArrayList<>());
-
             switchTurnsAtFinishAttack(game);
-
             refillCards(game);
-
             gameRepository.save(game);
-
             notifyPLayersAfterFinishAttack(game);
         }
     }
     @Transactional
     public void takeCards(Player player) {
+        boolean possibleToTakeCards = moveValidator.isPossibleToTakeCards(player, player.getPlayerInGame().getGame());
         OnlinePlayer playerInGame = player.getPlayerInGame();
         Game game = playerInGame.getGame();
         List<Card> beaten = game.getBeaten();
-        playerInGame.getCards().addAll(beaten);
-        onlinePlayerRepository.save(playerInGame);
-        playerInGame.getCards().add(game.getOffensiveCard());
+        List<Card> playersCards = playerInGame.getCards();
+        if(possibleToTakeCards) {
+            playersCards.addAll(beaten);
+            playersCards.add(game.getOffensiveCard());
+            updateStateForTakingCards(game, playerInGame);
+            notifyPlayersAfterTakeCards(game);
+        }
+        telegramBot.sendMessageToPlayer(player,"You'r not able to take cards as you'r attacker");
+    }
+
+    private void updateStateForTakingCards(Game game, OnlinePlayer playerInGame) {
+        game.setActivePlayer(game.getAttacker());
         game.setOffensiveCard(null);
         game.setBeaten(new ArrayList<>());
         refillCards(game);
         onlinePlayerRepository.save(playerInGame);
         gameRepository.save(game);
-        notifyPlayersAfterTakeCards(game);
     }
 
     private void notifyPlayersAfterTakeCards(Game game){

@@ -84,20 +84,28 @@ public class MoveValidator {
     }
 
     public boolean isPossibleToFinishMove(Player player, Game game) {
-        List<Card> beaten = game.getBeaten();
-        if (beaten.isEmpty()) {
-            telegramBot.sendMessageToPlayer(player, "You are not able to finish your first move");
-            return false;
+        if(player.getPlayerInGame().equals(game.getAttacker())) {
+            List<Card> beaten = game.getBeaten();
+            if (beaten.isEmpty()) {
+                telegramBot.sendMessageToPlayer(player, "You are not able to finish your first move");
+                return false;
+            }
+            if (isNull(game.getOffensiveCard())) {
+                return true;
+            } else {
+                telegramBot.sendMessageToPlayer(player,
+                        " You are not able to finish attack. Defender haven't defended yet. Offensive card: " +
+                                getPrettyMove(game.getOffensiveCard())
+                );
+                return false;
+            }
         }
-        if (isNull(game.getOffensiveCard())) {
-            return true;
-        } else {
-            telegramBot.sendMessageToPlayer(player,
-                    " You are not able to finish attack. Defender haven't defended yet. Offensive card: " +
-                            getPrettyMove(game.getOffensiveCard())
-            );
-            return false;
-        }
+        telegramBot.sendMessageToPlayer(player, "You are defender, you are not able to finish attack.");
+        return false;
+    }
+
+    public boolean isPossibleToTakeCards(Player player, Game game){
+        return !player.getPlayerInGame().equals(game.getAttacker());
     }
 
     public String getPrettyMove(Card move) {
