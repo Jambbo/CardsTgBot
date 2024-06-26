@@ -6,7 +6,10 @@ import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
+import com.example.tgbotcardsonline.repository.GameRepository;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,9 @@ import static java.util.Objects.isNull;
 public class MoveValidator {
     private final DeckResponseRepository deckResponseRepository;
     private final TelegramBot telegramBot;
+    private final OnlinePlayerRepository onlinePlayerRepository;
+    private final CardRepository cardRepository;
+    private final GameRepository gameRepository;
 
     public boolean isDefenceMoveValid(Game game, Card defendingCard) {
         Suit trumpSuit = game.getTrump();
@@ -127,10 +133,39 @@ public class MoveValidator {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
 
         if (onlinePlayer.getCards().isEmpty() && deckResponse.getRemaining() == 0){
+            processWinningState(onlinePlayer, game);
             return true;
         }else {
             return false;
         }
     }
 
+    private void processWinningState(OnlinePlayer onlinePlayer, Game game) {
+        Player player = onlinePlayer.getPlayer();
+        OnlinePlayer attacker = game.getAttacker();
+        Player opponent = getOpponent(game, attacker, player);
+        processAppStatistics(game, player, opponent);
+        processDeletingDataFromDb(game);
+        notifyPlayersAboutFinishGame(game);
+    }
+
+    private static void processAppStatistics(Game game, Player player, Player opponent) {
+        player.setWins(player.getWins()+1);
+        opponent.setLosses(player.getLosses()+1);
+        game.setWinner(player);
+    }
+
+    private void processDeletingDataFromDb(Game game) {
+        game.setBeaten(null);
+        onlinePlayerRepository.deleteAll(List.of(game.getAttacker(),game.getDefender()));
+        deckResponseRepository.delete(deckResponseRepository.findByDeckId(game.getDeckId()));
+    }
+
+    private static Player getOpponent(Game game, OnlinePlayer attacker, Player player) {
+        return attacker.equals(player) ? game.getDefender().getPlayer() : attacker.getPlayer();
+    }
+
+    private void notifyPlayersAboutFinishGame(Game game){
+        telegramBot.sendMessageToBothPlayers(game,game.getWinner()+" won!");
+    }
 }
