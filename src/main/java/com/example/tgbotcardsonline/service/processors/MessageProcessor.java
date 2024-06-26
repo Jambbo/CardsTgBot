@@ -56,6 +56,8 @@ public class MessageProcessor {
                 case "take cards" -> gameService.takeCards(player);
                 default -> telegramBot.sendMessageToPlayer(player, "Unknown command.");
             }
+        }else{
+            telegramBot.sendMessageToPlayer(player,"It's not your turn.");
         }
 
     }

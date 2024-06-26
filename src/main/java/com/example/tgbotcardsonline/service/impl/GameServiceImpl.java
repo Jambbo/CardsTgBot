@@ -7,6 +7,7 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
@@ -92,7 +93,7 @@ public class GameServiceImpl implements GameService {
             if (moveValidator.isDefenceMoveValid(game, playerMove)) {
                 defenceMove(game, playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't defend with + " + moveValidator.getPrettyMove(playerMove));
+                telegramBot.sendMessageToPlayer(player, "You can't defend with" + moveValidator.getPrettyMove(playerMove));
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
     }
@@ -120,9 +121,9 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer defender = game.getDefender();
         Player defenderPlayer = defender.getPlayer();
 
+        updateOnlinePlayerState(defender, move);
         telegramBot.sendMessageToBothPlayers(game, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
 
-        updateOnlinePlayerState(defender, move);
         List<Card> beaten = game.getBeaten();
         beaten.add(game.getOffensiveCard());
         beaten.add(move);
@@ -130,6 +131,7 @@ public class GameServiceImpl implements GameService {
         game.setBeaten(beaten);
         game.setActivePlayer(game.getAttacker());
         gameRepository.save(game);
+        onlinePlayerRepository.save(defender);
 
         if (moveValidator.isPlayerWon(defender)) {
             nominateWinner(defender);
@@ -218,6 +220,9 @@ public class GameServiceImpl implements GameService {
         if (defenderWithRefilledCards.getCards().isEmpty()) {
             nominateWinner(defenderWithRefilledCards);
         }
+        onlinePlayerRepository.save(attackerWithRefilledCards);
+        onlinePlayerRepository.save(defenderWithRefilledCards);
+        gameRepository.save(game);
     }
 
     private void nominateWinner(OnlinePlayer attackerWithRefilledCards) {
@@ -227,16 +232,27 @@ public class GameServiceImpl implements GameService {
     private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
         if (moveValidator.isCardNeeded(onlinePlayer)) {
+            int cardsToDraw;
             if (moveValidator.isPossibleToDrawCards(onlinePlayer)) {
-                cardService.drawACard(game.getDeckId(), 6 - onlinePlayer.getCards().size());
+                cardsToDraw = 6 - onlinePlayer.getCards().size();
             } else {
-                int validatedCountToDrawCards = moveValidator.getValidatedCountToDrawCards(onlinePlayer);
-                cardService.drawACard(game.getDeckId(), validatedCountToDrawCards);
+                cardsToDraw = moveValidator.getValidatedCountToDrawCards(onlinePlayer);
             }
+            DrawCardsResponse drawCardsResponse = cardService.drawACard(game.getDeckId(), cardsToDraw);
+            addCardsToPlayer(onlinePlayer, drawCardsResponse);
         }
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
         onlinePlayerRepository.save(onlinePlayer);
+        gameRepository.save(game);
         return onlinePlayer;
+    }
+
+    private void addCardsToPlayer(OnlinePlayer onlinePlayer, DrawCardsResponse drawCardsResponse) {
+        List<Card> cards = drawCardsResponse.getCards();
+        onlinePlayer.getCards().addAll(cards);
+        cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));
+        cardRepository.saveAll(cards);
+        onlinePlayerRepository.save(onlinePlayer);
     }
 
     private void switchTurnsAtFinishAttack(Game game) {
@@ -251,7 +267,7 @@ public class GameServiceImpl implements GameService {
     }
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
-        Game game = player.getGame();
+         Game game = player.getGame();
         if(player.getCards().remove(move)) {
             log.info("Deleted card " + move + " from player with id: " + player.getId());
             Card cardInDb = cardRepository.findByCode(move.getCode());

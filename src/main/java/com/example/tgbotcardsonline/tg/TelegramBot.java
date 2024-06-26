@@ -110,7 +110,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    @Async
     public void sendMessageToBothPlayers(Game game, String message) {
         sendMessageToPlayer(game.getAttacker().getPlayer(), message);
         sendMessageToPlayer(game.getDefender().getPlayer(), message);
@@ -119,7 +118,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void showAvailableCards(long chatId, List<Card> cards) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
-        message.setText("Choose a card:");
+        message.setText("Your cards:");
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
