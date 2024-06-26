@@ -101,14 +101,12 @@ public class GameServiceImpl implements GameService {
     @Override
     public void attackMove(Game game, Card move) {
         OnlinePlayer attacker = game.getAttacker();
-        OnlinePlayer defender = game.getDefender();
         Player attackerPlayer = attacker.getPlayer();
-        Player defenderPlayer = defender.getPlayer();
 
         updateOnlinePlayerState(attacker, move);
-        telegramBot.sendMessageToPlayer(defenderPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
-        telegramBot.sendMessageToPlayer(attackerPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
-        game.setActivePlayer(defender);
+
+        telegramBot.sendMessageToBothPlayers(game,attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        game.setActivePlayer(game.getDefender());
         game.setOffensiveCard(move);
         gameRepository.save(game);
 
@@ -150,6 +148,7 @@ public class GameServiceImpl implements GameService {
             notifyPLayersAfterFinishAttack(game);
         }
     }
+
     @Transactional
     public void takeCards(Player player) {
         boolean possibleToTakeCards = moveValidator.isPossibleToTakeCards(player, player.getPlayerInGame().getGame());
@@ -157,13 +156,12 @@ public class GameServiceImpl implements GameService {
         Game game = playerInGame.getGame();
         List<Card> beaten = game.getBeaten();
         List<Card> playersCards = playerInGame.getCards();
-        if(possibleToTakeCards) {
+        if (possibleToTakeCards) {
             playersCards.addAll(beaten);
             playersCards.add(game.getOffensiveCard());
             updateStateForTakingCards(game, playerInGame);
             notifyPlayersAfterTakeCards(game);
-        }
-        telegramBot.sendMessageToPlayer(player,"You'r not able to take cards as you'r attacker");
+        } else telegramBot.sendMessageToPlayer(player, "You'r not able to take cards as you'r attacker");
     }
 
     private void updateStateForTakingCards(Game game, OnlinePlayer playerInGame) {
@@ -175,7 +173,7 @@ public class GameServiceImpl implements GameService {
         gameRepository.save(game);
     }
 
-    private void notifyPlayersAfterTakeCards(Game game){
+    private void notifyPlayersAfterTakeCards(Game game) {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
         Player attacker = game.getAttacker().getPlayer();
         Player defender = game.getDefender().getPlayer();
@@ -185,7 +183,7 @@ public class GameServiceImpl implements GameService {
         log.info("notify players...");
 
         telegramBot.sendMessageToBothPlayers(game, defender.getUsername() + " takes the cards!");
-        telegramBot.sendMessageToBothPlayers(game, "Now is "+attacker.getUsername()+" move");
+        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
 
         telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
@@ -254,17 +252,20 @@ public class GameServiceImpl implements GameService {
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
         Game game = player.getGame();
-        player.getCards().remove(move);
-        log.info("Deleted card "+move+" from player with id: "+player.getId());
-        Card cardInDb = cardRepository.findByCode(move.getCode());
-        cardInDb.setOnlinePlayer(null);
-        cardRepository.save(cardInDb);
-        onlinePlayerRepository.save(player);
-        gameRepository.save(game);
-        log.info("cards players: ");
-        player.getCards().forEach(
-                c -> log.info(moveValidator.getPrettyMove(c))
-        );
+        if(player.getCards().remove(move)) {
+            log.info("Deleted card " + move + " from player with id: " + player.getId());
+            Card cardInDb = cardRepository.findByCode(move.getCode());
+            cardInDb.setOnlinePlayer(null);
+            cardRepository.save(cardInDb);
+            onlinePlayerRepository.save(player);
+            gameRepository.save(game);
+            log.info("cards players: ");
+            player.getCards().forEach(
+                    c -> log.info(moveValidator.getPrettyMove(c))
+            );
+        }else {
+            log.info("card "+ move +" was not deleted");
+        }
     }
 
     public Suit getRandomTrump() {

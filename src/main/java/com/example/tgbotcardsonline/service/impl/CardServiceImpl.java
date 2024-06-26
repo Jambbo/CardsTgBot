@@ -37,7 +37,11 @@ public class CardServiceImpl implements CardService {
     @Override
     public DrawCardsResponse drawACard(String deckId, int howMany) {
         try {
-            return cardsClient.contactToDrawACard(deckId, howMany);
+            DrawCardsResponse drawCardsResponse = cardsClient.contactToDrawACard(deckId, howMany);
+            DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
+            deckResponse.setRemaining(drawCardsResponse.getRemaining());
+            deckResponseRepository.save(deckResponse);
+            return drawCardsResponse;
         } catch (Exception e) {
             throw new RuntimeException("Error drawing cards: " + e.getMessage(), e);
         }
@@ -47,11 +51,11 @@ public class CardServiceImpl implements CardService {
     public Card getInputedCard(OnlinePlayer onlinePlayer, String callBackData) {
 
         for (Card card : onlinePlayer.getCards()) {
-            if(card.getCode().equals(callBackData)){
+            if (card.getCode().equals(callBackData)) {
                 return card;
             }
         }
-        telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(),"You do not have card "+callBackData);
+        telegramBot.sendMessageToPlayer(onlinePlayer.getPlayer(), "You do not have card " + callBackData);
         throw new RuntimeException();
     }
 }
