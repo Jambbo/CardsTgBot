@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,12 +39,16 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         ).toList();
         newCards.forEach(card -> {
             card.setOnlinePlayer(onlinePlayer);
-            onlinePlayer.addCard(card);  // This method should add the card to the list and set the onlinePlayer reference
+            onlinePlayer.addCard(card);
         });
+        saveCardsAndPlayerToDb(newCards, onlinePlayer);
+        return onlinePlayer;
+    }
+
+    private void saveCardsAndPlayerToDb(List<Card> newCards, OnlinePlayer onlinePlayer) {
         cardRepository.saveAll(newCards);
         onlinePlayer.setCards(newCards);
         onlinePlayerRepository.save(onlinePlayer);
-        return onlinePlayer;
     }
 
     @Override
@@ -56,7 +59,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private DrawCardsResponse getDrawCardsResponseToCreatePlayer(String deckId) {
         DrawCardsResponse drawCardsResponse;
         try {
-            drawCardsResponse = cardService.drawACard(deckId, 6);
+            drawCardsResponse = cardService.drawACardAPI(deckId, 6);
             if (drawCardsResponse == null || drawCardsResponse.getCards() == null) {
                 throw new RuntimeException("DrawCardsResponse or its cards are null");
             }
