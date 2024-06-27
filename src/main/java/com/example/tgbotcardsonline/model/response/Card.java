@@ -1,5 +1,6 @@
 package com.example.tgbotcardsonline.model.response;
 
+import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.enums.Suit;
@@ -47,4 +48,6 @@ public class Card {
     )
     public OnlinePlayer onlinePlayer;
 
+    @Column(name = "game_id")
+    private Long gameId;
 }

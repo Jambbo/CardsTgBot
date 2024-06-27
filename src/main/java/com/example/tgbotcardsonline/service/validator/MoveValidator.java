@@ -10,7 +10,6 @@ import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
-//import com.example.tgbotcardsonline.service.processors.WinProcessor;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,37 +41,27 @@ public class MoveValidator {
 
     public boolean isAttackMoveValid(Game game, Card playerMove) {
         List<Card> beatenCards = game.getBeaten();
-        if(beatenCards.isEmpty())  return true;
+        if (beatenCards.isEmpty()) {
+            return true;
+        }
         return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
     }
 
     public int getValidatedCountToDrawCards(OnlinePlayer player) {
         Game game = player.getGame();
-        String deckId = game.getDeckId();
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
-        return deckResponse.getRemaining();
-
+        return game.getCards().size();
     }
 
     public boolean isCardNeeded(OnlinePlayer player) {
-        if (player.getCards().size() >= 6) {
-            return false;
-        }
-        return true;
+        return player.getCards().size() < 6;
     }
 
     public boolean isPossibleToDrawCards(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
-        String deckId = game.getDeckId();
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
-        int remaining = deckResponse.getRemaining();
+        int remaining = game.getCards().size();
         int playerCardsAmount = onlinePlayer.getCards().size();
         int cardsNeeded = 6 - playerCardsAmount;
-        if (cardsNeeded > remaining) {
-            return false;
-        } else {
-            return true;
-        }
+        return cardsNeeded <= remaining;
     }
 
     public boolean isPossibleToFinishMove(Player player, Game game) {
@@ -120,13 +109,7 @@ public class MoveValidator {
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
-
-        if (onlinePlayer.getCards().isEmpty() && deckResponse.getRemaining() == 0){
-            return true;
-        }else {
-            return false;
-        }
+        return onlinePlayer.getCards().isEmpty() && game.getCards().isEmpty();
     }
 
 }

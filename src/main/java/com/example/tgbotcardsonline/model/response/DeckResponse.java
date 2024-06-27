@@ -28,4 +28,8 @@ public class DeckResponse {
     @JsonProperty("remaining")
     private int remaining;
 
+    public int getRemaining(){
+        return remaining;
+    }
+
 }

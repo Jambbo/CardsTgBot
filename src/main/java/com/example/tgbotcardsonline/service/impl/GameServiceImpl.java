@@ -1,6 +1,5 @@
 package com.example.tgbotcardsonline.service.impl;
 
-import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
@@ -8,7 +7,6 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
-import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
@@ -47,34 +45,64 @@ public class GameServiceImpl implements GameService {
         Game game = buildGame(deck, player1, player2);
         Game savedGame = gameRepository.save(game);
 
-        updatePlayerStates(firstPlayer, secondPlayer, player1, player2, savedGame);
+        updatePlayerStates(savedGame);
         log.info("Successfully created game");
         return savedGame;
     }
 
-    private Game buildGame(String deck, OnlinePlayer player1, OnlinePlayer player2) {
+    private Game buildGame(String deckId, OnlinePlayer player1, OnlinePlayer player2) {
         Suit trump = getRandomTrump();
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
+        int remaining = deckResponse.getRemaining();
+        List<Card> cards = cardService.drawACardAPI(deckId, remaining).getCards();
+        cardRepository.saveAll(cards);
         OnlinePlayer firstAttacker = countWhoAttackFirst(player1, player2, trump);
         OnlinePlayer defender = firstAttacker.equals(player1) ? player2 : player1;
         return Game.builder()
-                .deckId(deck)
+                .deckId(deckId)
                 .trump(trump)
                 .attacker(firstAttacker)
                 .defender(defender)
                 .activePlayer(firstAttacker)
+                .cards(cards)
                 .build();
     }
 
-    private void updatePlayerStates(Player firstPlayer, Player secondPlayer, OnlinePlayer player1, OnlinePlayer player2, Game game) {
+    private void updatePlayerStates(Game game) {
+        OnlinePlayer onlinePlayer1 = game.getAttacker();
+        OnlinePlayer onlinePlayer2 = game.getDefender();
+        Player firstPlayer = onlinePlayer1.getPlayer();
+        Player secondPlayer = onlinePlayer2.getPlayer();
+
+        setPlayersInGame(firstPlayer, secondPlayer, onlinePlayer1, onlinePlayer2);
+
+        playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
+
+        onlinePlayer1.setGame(game);
+        onlinePlayer2.setGame(game);
+
+        setGameToPlayerCards(onlinePlayer1);
+        setGameToPlayerCards(onlinePlayer2);
+        setGameToCards(game);
+
+        onlinePlayerRepository.saveAll(List.of(onlinePlayer1, onlinePlayer2));
+    }
+
+    private static void setPlayersInGame(Player firstPlayer, Player secondPlayer, OnlinePlayer player1, OnlinePlayer player2) {
         firstPlayer.setInGame(true);
         secondPlayer.setInGame(true);
         firstPlayer.setPlayerInGame(player1);
         secondPlayer.setPlayerInGame(player2);
-        playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
+    }
 
-        player1.setGame(game);
-        player2.setGame(game);
-        onlinePlayerRepository.saveAll(List.of(player1, player2));
+    private void setGameToCards(Game game) {
+        game.getCards().forEach(c -> c.setGameId(game.getId()));
+        gameRepository.save(game);
+    }
+
+    private void setGameToPlayerCards(OnlinePlayer player1) {
+        player1.getCards().forEach(c -> c.setGameId(player1.getGame().getId()));
+        onlinePlayerRepository.save(player1);
     }
 
     @Override
@@ -179,7 +207,6 @@ public class GameServiceImpl implements GameService {
     }
 
     private void notifyPlayersAfterTakeCards(Game game) {
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
         Player attacker = game.getAttacker().getPlayer();
         Player defender = game.getDefender().getPlayer();
         game.setAttacker(attacker.getPlayerInGame());
@@ -189,14 +216,13 @@ public class GameServiceImpl implements GameService {
 
         telegramBot.sendMessageToBothPlayers(game, defender.getUsername() + " takes the cards!");
         telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move");
-        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
+        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
         telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
     }
 
     private void notifyPLayersAfterFinishAttack(Game game) {
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
         Player attacker = game.getAttacker().getPlayer();
         Player defender = game.getDefender().getPlayer();
 
@@ -204,7 +230,7 @@ public class GameServiceImpl implements GameService {
 
         telegramBot.sendMessageToBothPlayers(game, "Cards beaten and " + attacker.getUsername() + " successfully defended!");
         telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
-        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + deckResponse.getRemaining() + "!");
+        telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
         telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
@@ -242,8 +268,8 @@ public class GameServiceImpl implements GameService {
             } else {
                 cardsToDraw = moveValidator.getValidatedCountToDrawCards(onlinePlayer);
             }
-            DrawCardsResponse drawCardsResponse = cardService.drawACard(game.getDeckId(), cardsToDraw);
-            addCardsToPlayer(onlinePlayer, drawCardsResponse);
+            List<Card> cards = cardService.drawCards(game, cardsToDraw);
+            addCardsToPlayer(onlinePlayer, cards);
         }
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
         onlinePlayerRepository.save(onlinePlayer);
@@ -251,8 +277,7 @@ public class GameServiceImpl implements GameService {
         return onlinePlayer;
     }
 
-    private void addCardsToPlayer(OnlinePlayer onlinePlayer, DrawCardsResponse drawCardsResponse) {
-        List<Card> cards = drawCardsResponse.getCards();
+    private void addCardsToPlayer(OnlinePlayer onlinePlayer, List<Card> cards) {
         onlinePlayer.getCards().addAll(cards);
         cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));
         cardRepository.saveAll(cards);
@@ -271,14 +296,12 @@ public class GameServiceImpl implements GameService {
     }
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
-         Game game = player.getGame();
+        Game game = player.getGame();
         if(player.getCards().remove(move)) {
             log.info("Deleted card " + move + " from player with id: " + player.getId());
-            Card cardInDb = cardRepository.findByCode(move.getCode());
-            cardInDb.setOnlinePlayer(null);
-            cardRepository.save(cardInDb);
-            onlinePlayerRepository.save(player);
-            gameRepository.save(game);
+            Card card = cardService.getInputtedCardByCodeAndGame(player, move.getCode());
+            card.setOnlinePlayer(null);
+            savePlayerAndCardAndGameToDb(player, card, game);
             log.info("cards players: ");
             player.getCards().forEach(
                     c -> log.info(moveValidator.getPrettyMove(c))
@@ -288,23 +311,19 @@ public class GameServiceImpl implements GameService {
         }
     }
 
+    private void savePlayerAndCardAndGameToDb(OnlinePlayer player, Card card, Game game) {
+        cardRepository.save(card);
+        onlinePlayerRepository.save(player);
+        gameRepository.save(game);
+    }
+
     public Suit getRandomTrump() {
         Suit[] suits = Suit.values();
         Random random = new Random();
         return suits[random.nextInt(suits.length)];
     }
 
-    public Card getRandomTrumpCard(){
-        Suit[] suits = Suit.values();
-        Value[] values = Value.values();
-        Suit suit = suits[new Random().nextInt(suits.length)];
-        Value value = values[new Random().nextInt(values.length)];
-        return Card.builder()
-                .suit(suit)
-                .value(value)
-                .code(value.getValue().charAt(0)+suit.getSuit().substring(0,1))
-                .build();
-    }
+
 
     public OnlinePlayer countWhoAttackFirst(OnlinePlayer player1, OnlinePlayer player2, Suit trump) {
         List<OnlinePlayer> onlinePlayers = List.of(player1, player2);

@@ -50,7 +50,8 @@ CREATE TABLE card
     code  VARCHAR,
     image VARCHAR,
     suit  VARCHAR,
-    value VARCHAR
+    value VARCHAR,
+    game_id INT
 );
 
 CREATE TABLE op_cards
@@ -78,3 +79,12 @@ CREATE TABLE game_beaten
     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (game_id) REFERENCES Game (id) ON DELETE CASCADE ON UPDATE NO ACTION,
     CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
+
+CREATE TABLE game_cards
+(
+    game_id BIGINT,
+    card_id BIGINT,
+    PRIMARY KEY (game_id, card_id),
+    CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (game_id) REFERENCES Game (id) ON DELETE CASCADE ON UPDATE NO ACTION,
+    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+)
