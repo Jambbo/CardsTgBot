@@ -10,7 +10,7 @@ import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
-import com.example.tgbotcardsonline.service.processors.WinProcessor;
+//import com.example.tgbotcardsonline.service.processors.WinProcessor;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,6 @@ import static java.util.Objects.isNull;
 public class MoveValidator {
     private final DeckResponseRepository deckResponseRepository;
     private final TelegramBot telegramBot;
-    private final WinProcessor winProcessor;
 
     public boolean isDefenceMoveValid(Game game, Card defendingCard) {
         Suit trumpSuit = game.getTrump();
@@ -124,7 +123,6 @@ public class MoveValidator {
         DeckResponse deckResponse = deckResponseRepository.findByDeckId(game.getDeckId());
 
         if (onlinePlayer.getCards().isEmpty() && deckResponse.getRemaining() == 0){
-            winProcessor.processWinningState(onlinePlayer, game);
             return true;
         }else {
             return false;

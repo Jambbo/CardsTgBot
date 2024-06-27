@@ -27,7 +27,8 @@ CREATE TABLE Game
     active_player_id  INT,
     trump             VARCHAR,
     offensive_card_id INT,
-    winner_id BIGINT
+    winner_id BIGINT,
+    very_bottom_card_id INT
 );
 
 CREATE TABLE online_player

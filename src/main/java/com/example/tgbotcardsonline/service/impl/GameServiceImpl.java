@@ -2,6 +2,7 @@ package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.tgbotcardsonline.service.processors.WinProcessor;
 
 import java.util.*;
 
@@ -34,6 +36,7 @@ public class GameServiceImpl implements GameService {
     private final DeckResponseRepository deckResponseRepository;
     private final MoveValidator moveValidator;
     private final CardRepository cardRepository;
+    private final WinProcessor winProcessor;
 
     @Override
     public Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer) {
@@ -226,7 +229,8 @@ public class GameServiceImpl implements GameService {
     }
 
     private void nominateWinner(OnlinePlayer attackerWithRefilledCards) {
-        log.info(attackerWithRefilledCards.getPlayer().getUsername() + " WONNN ABOBABOABOAOBOABOABOA");
+        winProcessor.processWinningState(attackerWithRefilledCards, attackerWithRefilledCards.getGame());
+        log.info("WONABOBAABOBAABOBAABOBA");
     }
 
     private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
@@ -288,6 +292,18 @@ public class GameServiceImpl implements GameService {
         Suit[] suits = Suit.values();
         Random random = new Random();
         return suits[random.nextInt(suits.length)];
+    }
+
+    public Card getRandomTrumpCard(){
+        Suit[] suits = Suit.values();
+        Value[] values = Value.values();
+        Suit suit = suits[new Random().nextInt(suits.length)];
+        Value value = values[new Random().nextInt(values.length)];
+        return Card.builder()
+                .suit(suit)
+                .value(value)
+                .code(value.getValue().charAt(0)+suit.getSuit().substring(0,1))
+                .build();
     }
 
     public OnlinePlayer countWhoAttackFirst(OnlinePlayer player1, OnlinePlayer player2, Suit trump) {

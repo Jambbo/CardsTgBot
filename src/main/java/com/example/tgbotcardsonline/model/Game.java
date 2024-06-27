@@ -48,6 +48,9 @@ public class Game {
     private List<Card> beaten;
 
     @OneToOne
+    private Card veryBottomCard;
+
+    @OneToOne
     private Player winner;
 
 }
