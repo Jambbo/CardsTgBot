@@ -30,4 +30,7 @@ public class Player {
     private boolean inGame;
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    private int wins;
+    private int losses;
 }

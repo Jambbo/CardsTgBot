@@ -6,7 +6,10 @@ import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
+import com.example.tgbotcardsonline.repository.GameRepository;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,17 +90,21 @@ public class MoveValidator {
     }
 
     public String getPrettyMove(Card move) {
-        Map<String, String> suitSymbols = new HashMap<>();
-        suitSymbols.put("H", "♥");
-        suitSymbols.put("D", "♦");
-        suitSymbols.put("S", "♠");
-        suitSymbols.put("C", "♣");
-
+        Map<String, String> suitSymbols = getSuitSymbolsMap();
         String cardCode = move.getCode();
         String cardValue = cardCode.substring(0, cardCode.length() - 1);
         if (cardValue.equals("0")) cardValue = "10";
         String cardSuit = cardCode.substring(cardCode.length() - 1);
         return cardValue + suitSymbols.get(cardSuit);
+    }
+
+    private static Map<String, String> getSuitSymbolsMap() {
+        Map<String, String> suitSymbols = new HashMap<>();
+        suitSymbols.put("H", "♥");
+        suitSymbols.put("D", "♦");
+        suitSymbols.put("S", "♠");
+        suitSymbols.put("C", "♣");
+        return suitSymbols;
     }
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {

@@ -13,7 +13,9 @@ CREATE TABLE Player
     username          VARCHAR(255)       DEFAULT 'User',
     player_in_game_id INT,
     in_game           BOOLEAN   NOT NULL,
-    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    wins INT NOT NULL DEFAULT 0,
+    losses INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE Game
@@ -24,7 +26,9 @@ CREATE TABLE Game
     defender_id       INT,
     active_player_id  INT,
     trump             VARCHAR,
-    offensive_card_id INT
+    offensive_card_id INT,
+    winner_id BIGINT,
+    very_bottom_card_id INT
 );
 
 CREATE TABLE online_player
