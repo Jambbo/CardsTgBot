@@ -20,7 +20,6 @@ import static java.util.Objects.isNull;
 @Service
 @RequiredArgsConstructor
 public class MoveValidator {
-    private final DeckResponseRepository deckResponseRepository;
     private final TelegramBot telegramBot;
 
     public boolean isDefenceMoveValid(Game game, Card defendingCard) {
@@ -30,10 +29,7 @@ public class MoveValidator {
                 defendingCard.getValue().isHigherThan(attackingCard.getValue())) {
             return true;
         }
-        if (defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit)) {
-            return true;
-        }
-        return false;
+        return defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit);
     }
 
     public boolean isAttackMoveValid(Game game, Card playerMove) {
@@ -61,25 +57,30 @@ public class MoveValidator {
         return cardsNeeded <= remaining;
     }
 
-    public boolean isPossibleToFinishMove(Player player, Game game) {
-        if(player.getPlayerInGame().equals(game.getAttacker())) {
-            List<Card> beaten = game.getBeaten();
-            if (beaten.isEmpty()) {
-                telegramBot.sendMessageToPlayer(player, "You are not able to finish your first move");
-                return false;
-            }
-            if (isNull(game.getOffensiveCard())) {
-                return true;
-            } else {
-                telegramBot.sendMessageToPlayer(player,
-                        " You are not able to finish attack. Defender haven't defended yet. Offensive card: " +
-                                getPrettyMove(game.getOffensiveCard())
-                );
-                return false;
-            }
+    public boolean isPossibleToFinishMove(Player player, Game game){
+        boolean isAttacker = player.getPlayerInGame().equals(game.getAttacker());
+        boolean isFirstMoveNotBeaten = game.getBeaten().isEmpty();
+        boolean isOffensiveCardNull = isNull(game.getOffensiveCard());
+
+        if (!isAttacker) {
+            telegramBot.sendMessageToPlayer(player, "You are the defender, you are not able to finish the attack.");
+            return false;
         }
-        telegramBot.sendMessageToPlayer(player, "You are defender, you are not able to finish attack.");
-        return false;
+
+        if (isFirstMoveNotBeaten) {
+            telegramBot.sendMessageToPlayer(player, "You are not able to finish your first move.");
+            return false;
+        }
+
+        if (isOffensiveCardNull) {
+            return true;
+        } else {
+            telegramBot.sendMessageToPlayer(player,
+                    "You are not able to finish the attack. The defender hasn't defended yet. Offensive card: " +
+                            getPrettyMove(game.getOffensiveCard())
+            );
+            return false;
+        }
     }
 
     public boolean isPossibleToTakeCards(Player player, Game game){
@@ -87,22 +88,24 @@ public class MoveValidator {
     }
 
     public String getPrettyMove(Card move) {
-        Map<String, String> suitSymbols = new HashMap<>();
-        suitSymbols.put("H", "♥");
-        suitSymbols.put("D", "♦");
-        suitSymbols.put("S", "♠");
-        suitSymbols.put("C", "♣");
+        Map<String, String> suitSymbols = Map.of(
+                "H", "♥",
+                "D", "♦",
+                "S", "♠",
+                "C", "♣"
+        );
 
         String cardCode = move.getCode();
-        String cardValue = cardCode.substring(0, cardCode.length() - 1);
-        if (cardValue.equals("0")) cardValue = "10";
+        String cardValue = cardCode.startsWith("0") ? "10" : cardCode.substring(0, cardCode.length() - 1);
         String cardSuit = cardCode.substring(cardCode.length() - 1);
+
         return cardValue + suitSymbols.get(cardSuit);
     }
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
+        List<Card> cards = onlinePlayer.getCards();
         Game game = onlinePlayer.getGame();
-        return onlinePlayer.getCards().isEmpty() && game.getCards().isEmpty();
+        return cards.isEmpty() && game.getCards().isEmpty();
     }
 
 }
