@@ -6,7 +6,10 @@ import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
+import com.example.tgbotcardsonline.repository.GameRepository;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,7 +90,7 @@ public class MoveValidator {
         return !player.getPlayerInGame().equals(game.getAttacker());
     }
 
-    public String getPrettyMove(Card move) {
+   public String getPrettyMove(Card move) {
         Map<String, String> suitSymbols = Map.of(
                 "H", "♥",
                 "D", "♦",
@@ -101,6 +104,7 @@ public class MoveValidator {
 
         return cardValue + suitSymbols.get(cardSuit);
     }
+
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
         List<Card> cards = onlinePlayer.getCards();
