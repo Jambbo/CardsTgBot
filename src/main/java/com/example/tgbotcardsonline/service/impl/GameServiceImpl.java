@@ -96,7 +96,9 @@ public class GameServiceImpl implements GameService {
     }
 
     private void setGameToCards(Game game) {
-        game.getCards().forEach(c -> c.setGameId(game.getId()));
+        List<Card> cards = game.getCards();
+        cards.forEach(c -> c.setGameId(game.getId()));
+        cardRepository.saveAll(cards);
         gameRepository.save(game);
     }
 
@@ -259,19 +261,24 @@ public class GameServiceImpl implements GameService {
         log.info("WONABOBAABOBAABOBAABOBA");
     }
 
-    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
+    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer){
         Game game = onlinePlayer.getGame();
-        if (moveValidator.isCardNeeded(onlinePlayer)) {
-            int cardsToDraw;
-            if (moveValidator.isPossibleToDrawCards(onlinePlayer)) {
-                cardsToDraw = 6 - onlinePlayer.getCards().size();
-            } else {
-                cardsToDraw = moveValidator.getValidatedCountToDrawCards(onlinePlayer);
-            }
-            List<Card> cards = cardService.drawCards(game, cardsToDraw);
-            addCardsToPlayer(onlinePlayer, cards);
+        if(!moveValidator.isCardNeeded(onlinePlayer)){
+            log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
+            return saveEntities(onlinePlayer,game);
         }
+        int cardsToDraw = moveValidator.isPossibleToDrawCards(onlinePlayer)?
+                        6 - onlinePlayer.getCards().size() :
+                        moveValidator.getValidatedCountToDrawCards(onlinePlayer);
+        List<Card> cards = cardService.drawCards(game, cardsToDraw);
+        addCardsToPlayer(onlinePlayer,cards);
+
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
+        return saveEntities(onlinePlayer,game);
+    }
+
+
+    private OnlinePlayer saveEntities(OnlinePlayer onlinePlayer, Game game) {
         onlinePlayerRepository.save(onlinePlayer);
         gameRepository.save(game);
         return onlinePlayer;
