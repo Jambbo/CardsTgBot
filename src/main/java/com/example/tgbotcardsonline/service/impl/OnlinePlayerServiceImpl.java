@@ -51,10 +51,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         onlinePlayerRepository.save(onlinePlayer);
     }
 
-    @Override
-    public void showMyCards(OnlinePlayer player) {
-        telegramBot.showAvailableCards(player.getPlayer().getChatId(),player.getCards());
-    }
+
 
     private DrawCardsResponse getDrawCardsResponseToCreatePlayer(String deckId) {
         DrawCardsResponse drawCardsResponse;

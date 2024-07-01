@@ -28,25 +28,15 @@ import static java.util.Objects.isNull;
 public class MessageProcessor {
 
     private final TelegramBot telegramBot;
-    private final OnlinePlayerRepository onlinePlayerRepository;
-    private final OnlinePlayerService onlinePlayerService;
     private final GameService gameService;
-    private final GameRepository gameRepository;
-    private final CardService cardService;
-    private final DeckResponseRepository deckResponseRepository;
+
 
     public void handleGameOperation(String messageText, Player player) {
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
         Game game = onlinePlayer.getGame();
         switch (messageText) {
-            case "resign":
-                gameService.surrend(onlinePlayer);
-                break;
-            case "myCards":
-                onlinePlayerService.showMyCards(onlinePlayer);
-                break;
-            default:
-                log.info(player.getUsername()+ " wrote: " + messageText);
+            case "resign" -> gameService.surrend(onlinePlayer);
+            default -> log.info(player.getUsername()+ " wrote: " + messageText);
         }
 
         boolean isPlayersTurn = isPlayersMove(player, game);
@@ -86,10 +76,6 @@ public class MessageProcessor {
         OnlinePlayer activePlayerInGame = game.getActivePlayer();
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
         return activePlayerInGame.equals(onlinePlayer);
-    }
-
-    private void handleCommandsInGame(String message, OnlinePlayer player) {
-
     }
 
 

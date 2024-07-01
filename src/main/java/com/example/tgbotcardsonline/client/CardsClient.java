@@ -13,6 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +26,12 @@ public class CardsClient {
             "6C", "7C", "8C", "9C", "0C", "JC", "QC", "KC", "AC",
             "6H", "7H", "8H", "9H", "0H", "JH", "QH", "KH", "AH"
             );
+    public static final Map<String, String> suitSymbols = Map.of(
+            "H", "♥",
+            "D", "♦",
+            "S", "♠",
+            "C", "♣"
+    );
     public CardsClient() {
         this.restTemplate = new RestTemplate();
         this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());

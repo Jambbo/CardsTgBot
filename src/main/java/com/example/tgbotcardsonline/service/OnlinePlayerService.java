@@ -7,5 +7,5 @@ public interface OnlinePlayerService {
 
     OnlinePlayer createOnlinePlayer(Player player, String deckId);
 
-    void showMyCards(OnlinePlayer player);
+
 }

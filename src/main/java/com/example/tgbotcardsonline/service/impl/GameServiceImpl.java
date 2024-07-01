@@ -117,13 +117,13 @@ public class GameServiceImpl implements GameService {
             if (moveValidator.isAttackMoveValid(game, playerMove)) {
                 attackMove(game, playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't attack with + " + moveValidator.getPrettyMove(playerMove));
+                telegramBot.sendMessageToPlayer(player, "You can't attack with " + moveValidator.getPrettyMove(playerMove));
             }
         } else if (game.getDefender().equals(onlinePlayer)) {
             if (moveValidator.isDefenceMoveValid(game, playerMove)) {
                 defenceMove(game, playerMove);
             } else {
-                telegramBot.sendMessageToPlayer(player, "You can't defend with" + moveValidator.getPrettyMove(playerMove));
+                telegramBot.sendMessageToPlayer(player, "You can't defend with " + moveValidator.getPrettyMove(playerMove));
             }
         } else telegramBot.sendMessageToPlayer(player, "aboba aboba aboba...");
     }

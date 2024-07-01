@@ -1,5 +1,6 @@
 package com.example.tgbotcardsonline.service.validator;
 
+import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
@@ -88,12 +89,7 @@ public class MoveValidator {
     }
 
     public String getPrettyMove(Card move) {
-        Map<String, String> suitSymbols = Map.of(
-                "H", "♥",
-                "D", "♦",
-                "S", "♠",
-                "C", "♣"
-        );
+        Map<String, String> suitSymbols = CardsClient.suitSymbols;
 
         String cardCode = move.getCode();
         String cardValue = cardCode.startsWith("0") ? "10" : cardCode.substring(0, cardCode.length() - 1);
