@@ -9,6 +9,7 @@ import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,8 +35,13 @@ public class WinProcessor {
 
         game.setAttacker(null);
         game.setDefender(null);
+        game.setActivePlayer(null);
+        game.setCards(null);
         playerRepository.saveAll(List.of(attackerPlayer,defenderPlayer));
         gameRepository.save(game);
+//        cardRepository.deleteAll(null);
+        cardRepository.deleteAll(player.getGame().getCards());
+        cardRepository.deleteAllCardsByGameId(player.getGame().getId());
         onlinePlayerRepository.deleteAll(List.of(attacker,defender));
     }
 
