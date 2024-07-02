@@ -33,7 +33,14 @@ public class MessageProcessor {
                 gameService.resign(onlinePlayer);
                 return;
             }
-            case "/myprofile" -> handleMyProfileQuery(player);
+            case "/myprofile" -> {
+                handleMyProfileQuery(player);
+                return;
+            }
+            case "/help" -> {
+                handleHelpQuery(player);
+                return;
+            }
             default -> log.info(player.getUsername()+ " wrote: " + messageText);
         }
 
@@ -48,6 +55,15 @@ public class MessageProcessor {
             telegramBot.sendMessageToPlayer(player,"It's not your turn.");
         }
 
+    }
+
+    public void handleHelpQuery(Player player) {
+        String helpMessage = "🆘 *Bot Commands* 🆘\n\n" +
+                "/startgame - Start a new game with a random player\n" +
+                "/myprofile - Open your profile\n" +
+                "/help - Bot usage guide\n";
+
+        telegramBot.sendMessageToPlayer(player, helpMessage);
     }
 
     public void handleWithMove(String callbackData, Player player) {

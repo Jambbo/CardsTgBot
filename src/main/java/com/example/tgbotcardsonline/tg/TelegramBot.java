@@ -87,6 +87,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "/aboba" -> messageBuilder.text("aboba");
             case "/startgame" -> getSearchRequestService().StartLookForRandomGame(player);
             case "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
+            case "/help" -> getMessageProcessor().handleHelpQuery(player);
             default -> messageBuilder.text("You sent: " + messageText);
         }
     }
