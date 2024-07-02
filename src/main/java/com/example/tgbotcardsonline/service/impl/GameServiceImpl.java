@@ -10,6 +10,7 @@ import com.example.tgbotcardsonline.repository.*;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
+import com.example.tgbotcardsonline.service.processors.WinProcessor;
 import com.example.tgbotcardsonline.service.validator.MoveValidator;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class GameServiceImpl implements GameService {
     private final DeckResponseRepository deckResponseRepository;
     private final MoveValidator moveValidator;
     private final CardRepository cardRepository;
-
+    private final WinProcessor winProcessor;
     @Override
     public Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer) {
         String deck = cardService.brandNewDeck();
@@ -62,6 +63,7 @@ public class GameServiceImpl implements GameService {
                 .defender(defender)
                 .activePlayer(firstAttacker)
                 .cards(cards)
+                .winner(null)
                 .build();
     }
 
@@ -75,12 +77,14 @@ public class GameServiceImpl implements GameService {
 
         playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
 
+        gameRepository.save(game);
         onlinePlayer1.setGame(game);
         onlinePlayer2.setGame(game);
 
+        setGameToCards(game);
+        gameRepository.save(game);
         setGameToPlayerCards(onlinePlayer1);
         setGameToPlayerCards(onlinePlayer2);
-        setGameToCards(game);
 
         onlinePlayerRepository.saveAll(List.of(onlinePlayer1, onlinePlayer2));
     }
@@ -100,13 +104,20 @@ public class GameServiceImpl implements GameService {
     }
 
     private void setGameToPlayerCards(OnlinePlayer player1) {
-        player1.getCards().forEach(c -> c.setGameId(player1.getGame().getId()));
+        List<Card> cards = player1.getCards();
+        cards.forEach(c -> c.setGameId(player1.getGame().getId()));
+        cardRepository.saveAll(cards);
         onlinePlayerRepository.save(player1);
     }
 
     @Override
-    public void surrend(OnlinePlayer player) {
-
+    public void resign(OnlinePlayer player) {
+        String winnerName = winProcessor.getWinnerNameDuringResign(player);
+        telegramBot.sendMessageToBothPlayers(
+                player.getGame(),
+                player.getPlayer().getUsername()+" gave up!"+"\nWinner: "+ winnerName
+        );
+        winProcessor.processWinningState(player);
     }
 
     @Override
@@ -252,9 +263,17 @@ public class GameServiceImpl implements GameService {
         onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);
     }
-
-    private void nominateWinner(OnlinePlayer attackerWithRefilledCards) {
-        log.info(attackerWithRefilledCards.getPlayer().getUsername() + " WONNN ABOBABOABOAOBOABOABOA");
+    //TODO test it
+    private void nominateWinner(OnlinePlayer winner) {
+        Game game = winner.getGame();
+        Player playerWinner = winner.getPlayer();
+        OnlinePlayer loser =
+                game.getAttacker().equals(winner) ?
+                game.getDefender() : game.getAttacker();
+        Player loserPlayer = loser.getPlayer();
+        winProcessor.processWinningState(loser);
+        telegramBot.sendMessageToPlayer(playerWinner,playerWinner.getUsername()+" - won!");
+        telegramBot.sendMessageToPlayer(loserPlayer, playerWinner.getUsername()+" - won!");
     }
 
     private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer){

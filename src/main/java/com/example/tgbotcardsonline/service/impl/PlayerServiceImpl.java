@@ -1,7 +1,9 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Player;
+import com.example.tgbotcardsonline.model.PlayerStatistics;
 import com.example.tgbotcardsonline.repository.PlayerRepository;
+import com.example.tgbotcardsonline.repository.PlayerStatisticsRepository;
 import com.example.tgbotcardsonline.service.PlayerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,18 +15,28 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class PlayerServiceImpl implements PlayerService {
     private final PlayerRepository playerRepository;
+    private final PlayerStatisticsRepository playerStatisticsRepository;
 
     @Override
     public Player getByChatIdOrElseCreateNew(Long chatId, Message message) {
         return playerRepository.findByChatId(chatId).orElseGet(() -> {
-            Player newPlayer = new Player();
-            newPlayer.setChatId(message.getChatId());
-            newPlayer.setUsername( // if username null -> username = player
-                    message.getFrom().getUserName() != null
-                            ? message.getFrom().getUserName()
-                            : "Player");
-            newPlayer.setInGame(false);
-            newPlayer.setCreatedAt(LocalDateTime.now());
+
+            PlayerStatistics playerStatistics = PlayerStatistics.builder()
+                    .gamesPlayed(0L)
+                    .wins(0L)
+                    .build();
+            playerStatisticsRepository.save(playerStatistics);
+
+            Player newPlayer = Player.builder()
+                    .chatId(message.getChatId())
+                    .username(
+                            message.getFrom().getUserName() != null
+                                    ? message.getFrom().getUserName()
+                                    : "Player"
+                    )
+                    .inGame(false)
+                    .playerStatistics(playerStatistics)
+                    .build();
             return playerRepository.save(newPlayer);
         });
     }

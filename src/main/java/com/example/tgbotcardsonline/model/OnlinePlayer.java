@@ -42,8 +42,4 @@ public class OnlinePlayer {
         cards.add(card);
         card.setOnlinePlayer(this);
     }
-    public void removeCard(Card card){
-        cards.remove(card);
-
-    }
 }

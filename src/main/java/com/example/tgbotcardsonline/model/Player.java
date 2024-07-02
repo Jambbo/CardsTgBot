@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,10 +26,13 @@ public class Player {
     @OneToOne
     @JoinColumn(name = "player_in_game_id")
     private OnlinePlayer playerInGame;
-    // we can check if user in game by "playerInGame" if it's null - not in game,
-    // but I added this for comfort,
-    // if u will add method to check if user online without this field than u can delete this
+
     private boolean inGame;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @OneToOne
+    private PlayerStatistics playerStatistics;
+
 }

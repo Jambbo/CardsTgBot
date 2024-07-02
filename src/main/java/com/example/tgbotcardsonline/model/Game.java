@@ -55,4 +55,7 @@ public class Game {
     )
     private List<Card> cards;
 
+    @OneToOne
+    private Player winner;
+
 }

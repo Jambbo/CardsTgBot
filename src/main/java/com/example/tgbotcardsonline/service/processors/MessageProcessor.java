@@ -4,20 +4,14 @@ import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
+import com.example.tgbotcardsonline.model.PlayerStatistics;
 import com.example.tgbotcardsonline.model.response.Card;
-import com.example.tgbotcardsonline.model.response.DeckResponse;
-import com.example.tgbotcardsonline.repository.DeckResponseRepository;
-import com.example.tgbotcardsonline.repository.GameRepository;
-import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
-import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.GameService;
-import com.example.tgbotcardsonline.service.OnlinePlayerService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.isNull;
@@ -35,7 +29,11 @@ public class MessageProcessor {
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
         Game game = onlinePlayer.getGame();
         switch (messageText) {
-            case "resign" -> gameService.surrend(onlinePlayer);
+            case "resign" -> {
+                gameService.resign(onlinePlayer);
+                return;
+            }
+            case "/myprofile" -> handleMyProfileQuery(player);
             default -> log.info(player.getUsername()+ " wrote: " + messageText);
         }
 
@@ -72,6 +70,27 @@ public class MessageProcessor {
         gameService.makeMove(player, playersCard);
     }
 
+    public void handleMyProfileQuery(Player player) {
+        PlayerStatistics playerStatistics = player.getPlayerStatistics();
+        Long gamesPlayed = playerStatistics.getGamesPlayed();
+        Long wins = playerStatistics.getWins();
+        Long losses = gamesPlayed - wins;
+        Double winRate = playerStatistics.getWinRate();
+
+        String message = String.format(
+                """
+                        📊 *Your Stats* 📊
+
+                        🏅 *Games Played:* %d
+                        🏆 *Games Won:* %d
+                        ❌ *Games Lost:* %d
+                        📈 *Win Rate:* %.2f%%""",
+                gamesPlayed, wins, losses, winRate
+        );
+
+        telegramBot.sendMessageToPlayer(player, message);
+    }
+
     private boolean isPlayersMove(Player player, Game game) {
         OnlinePlayer activePlayerInGame = game.getActivePlayer();
         OnlinePlayer onlinePlayer = player.getPlayerInGame();
@@ -87,5 +106,6 @@ public class MessageProcessor {
         }
         return null;
     }
+
 
 }

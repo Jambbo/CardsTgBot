@@ -9,7 +9,7 @@ public interface GameService {
 
     Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer);
 
-    void surrend(OnlinePlayer player);
+    void resign(OnlinePlayer player);
 
 
     void makeMove(Player player, Card playerMove);
