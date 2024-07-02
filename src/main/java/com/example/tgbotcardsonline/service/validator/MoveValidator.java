@@ -1,20 +1,15 @@
 package com.example.tgbotcardsonline.service.validator;
 
+import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.Game;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
-import com.example.tgbotcardsonline.model.response.DeckResponse;
-import com.example.tgbotcardsonline.repository.CardRepository;
-import com.example.tgbotcardsonline.repository.DeckResponseRepository;
-import com.example.tgbotcardsonline.repository.GameRepository;
-import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +55,7 @@ public class MoveValidator {
         return cardsNeeded <= remaining;
     }
 
-    public boolean isPossibleToFinishMove(Player player, Game game){
+    public boolean isPossibleToFinishMove(Player player, Game game) {
         boolean isAttacker = player.getPlayerInGame().equals(game.getAttacker());
         boolean isFirstMoveNotBeaten = game.getBeaten().isEmpty();
         boolean isOffensiveCardNull = isNull(game.getOffensiveCard());
@@ -86,17 +81,12 @@ public class MoveValidator {
         }
     }
 
-    public boolean isPossibleToTakeCards(Player player, Game game){
+    public boolean isPossibleToTakeCards(Player player, Game game) {
         return !player.getPlayerInGame().equals(game.getAttacker());
     }
 
-   public String getPrettyMove(Card move) {
-        Map<String, String> suitSymbols = Map.of(
-                "H", "♥",
-                "D", "♦",
-                "S", "♠",
-                "C", "♣"
-        );
+    public String getPrettyMove(Card move) {
+        Map<String, String> suitSymbols = CardsClient.suitSymbols;
 
         String cardCode = move.getCode();
         String cardValue = cardCode.startsWith("0") ? "10" : cardCode.substring(0, cardCode.length() - 1);
@@ -104,7 +94,6 @@ public class MoveValidator {
 
         return cardValue + suitSymbols.get(cardSuit);
     }
-
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
         List<Card> cards = onlinePlayer.getCards();

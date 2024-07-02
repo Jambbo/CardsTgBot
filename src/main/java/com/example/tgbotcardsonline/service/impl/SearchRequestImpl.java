@@ -57,16 +57,21 @@ public class SearchRequestImpl implements SearchRequestService {
     private void notifyUsersAboutStartOfGame(Player player, Player opponent, Game game) {
         Player firstAttacker = game.getActivePlayer().getPlayer();
         Player firstDefender = game.getDefender().getPlayer();
-        Map<String, String> suitSymbols = new HashMap<>();
-        suitSymbols.put("HEARTS", "♥");
-        suitSymbols.put("DIAMONDS", "♦");
-        suitSymbols.put("SPADES", "♠");
-        suitSymbols.put("CLUBS", "♣");
+        Map<String, String> suitSymbols = Map.of(
+                "HEARTS", "♥",
+                "DIAMONDS", "♦",
+                "SPADES", "♠",
+                "CLUBS", "♣"
+        );
 
         Suit trump = game.getTrump();
         String trumpName = trump.name().toUpperCase();
         String suitSymbol = suitSymbols.get(trumpName);
 
+        contactToTelegramBotToSendMessage(player, opponent, trump, suitSymbol, firstAttacker, firstDefender);
+    }
+
+    private void contactToTelegramBotToSendMessage(Player player, Player opponent, Suit trump, String suitSymbol, Player firstAttacker, Player firstDefender) {
         telegramBot.sendMessageToPlayer(player, "Trump is: " + trump + " " + suitSymbol);
         telegramBot.sendMessageToPlayer(opponent, "Trump is: " + trump + " " + suitSymbol);
         telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
@@ -74,7 +79,7 @@ public class SearchRequestImpl implements SearchRequestService {
         telegramBot.showAvailableCards(player.getChatId(), player.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(opponent.getChatId(), opponent.getPlayerInGame().getCards());
         telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!");
-        telegramBot.sendMessageToPlayer(firstDefender, "Now is "+firstAttacker.getUsername()+" turn");
+        telegramBot.sendMessageToPlayer(firstDefender, "Now is "+ firstAttacker.getUsername()+" turn");
     }
 
 }

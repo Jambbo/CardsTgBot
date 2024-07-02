@@ -14,8 +14,7 @@ CREATE TABLE Player
     player_in_game_id INT,
     in_game           BOOLEAN   NOT NULL,
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    wins INT NOT NULL DEFAULT 0,
-    losses INT NOT NULL DEFAULT 0
+    player_statistics_id BIGINT
 );
 
 CREATE TABLE Game
@@ -27,8 +26,7 @@ CREATE TABLE Game
     active_player_id  INT,
     trump             VARCHAR,
     offensive_card_id INT,
-    winner_id BIGINT,
-    very_bottom_card_id INT
+    winner_id INT
 );
 
 CREATE TABLE online_player
@@ -87,4 +85,12 @@ CREATE TABLE game_cards
     PRIMARY KEY (game_id, card_id),
     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (game_id) REFERENCES Game (id) ON DELETE CASCADE ON UPDATE NO ACTION,
     CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+);
+
+CREATE TABLE Player_statistics
+(
+    id BIGSERIAL PRIMARY KEY,
+    wins BIGINT DEFAULT 0,
+    games_played BIGINT DEFAULT 0,
+    win_rate DOUBLE PRECISION DEFAULT 0
 )

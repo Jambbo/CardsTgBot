@@ -46,7 +46,7 @@ public class Game {
             inverseJoinColumns = @JoinColumn(name = "card_id")
     )
     private List<Card> beaten;
-  
+
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "game_cards",
@@ -55,5 +55,7 @@ public class Game {
     )
     private List<Card> cards;
 
+    @OneToOne
+    private Player winner;
 
 }
