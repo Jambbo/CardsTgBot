@@ -1,14 +1,10 @@
 package com.example.tgbotcardsonline.model;
 
-import com.example.tgbotcardsonline.model.response.Card;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @AllArgsConstructor

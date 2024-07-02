@@ -6,13 +6,10 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
-import com.example.tgbotcardsonline.model.response.DeckResponse;
-import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +55,7 @@ public class MoveValidator {
         return cardsNeeded <= remaining;
     }
 
-    public boolean isPossibleToFinishMove(Player player, Game game){
+    public boolean isPossibleToFinishMove(Player player, Game game) {
         boolean isAttacker = player.getPlayerInGame().equals(game.getAttacker());
         boolean isFirstMoveNotBeaten = game.getBeaten().isEmpty();
         boolean isOffensiveCardNull = isNull(game.getOffensiveCard());
@@ -84,7 +81,7 @@ public class MoveValidator {
         }
     }
 
-    public boolean isPossibleToTakeCards(Player player, Game game){
+    public boolean isPossibleToTakeCards(Player player, Game game) {
         return !player.getPlayerInGame().equals(game.getAttacker());
     }
 
