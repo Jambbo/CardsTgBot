@@ -34,6 +34,7 @@ public class GameServiceImpl implements GameService {
     private final MoveValidator moveValidator;
     private final CardRepository cardRepository;
     private final WinProcessor winProcessor;
+
     @Override
     public Game createGame1v1ThrowIn(Player firstPlayer, Player secondPlayer) {
         String deck = cardService.brandNewDeck();
@@ -75,26 +76,31 @@ public class GameServiceImpl implements GameService {
 
         setPlayersInGame(firstPlayer, secondPlayer, onlinePlayer1, onlinePlayer2);
 
-        playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
-
-        gameRepository.save(game);
-        onlinePlayer1.setGame(game);
-        onlinePlayer2.setGame(game);
+//        gameRepository.save(game);
+        setGameToOnlinePlayers(game);
 
         setGameToCards(game);
-        gameRepository.save(game);
+//        gameRepository.save(game);
         setGameToPlayerCards(onlinePlayer1);
         setGameToPlayerCards(onlinePlayer2);
 
+
+    }
+
+    private void setGameToOnlinePlayers(Game game) {
+        OnlinePlayer onlinePlayer1 = game.getAttacker();
+        OnlinePlayer onlinePlayer2 = game.getDefender();
+        onlinePlayer1.setGame(game);
+        onlinePlayer2.setGame(game);
         onlinePlayerRepository.saveAll(List.of(onlinePlayer1, onlinePlayer2));
     }
 
-    private static void setPlayersInGame(Player firstPlayer, Player secondPlayer, OnlinePlayer player1, OnlinePlayer player2) {
+    private void setPlayersInGame(Player firstPlayer, Player secondPlayer, OnlinePlayer player1, OnlinePlayer player2) {
         firstPlayer.setInGame(true);
         secondPlayer.setInGame(true);
         firstPlayer.setPlayerInGame(player1);
         secondPlayer.setPlayerInGame(player2);
-
+        playerRepository.saveAll(List.of(firstPlayer, secondPlayer));
     }
 
     private void setGameToCards(Game game) {
@@ -116,7 +122,7 @@ public class GameServiceImpl implements GameService {
         String winnerName = winProcessor.getWinnerNameDuringResign(player);
         telegramBot.sendMessageToBothPlayers(
                 player.getGame(),
-                player.getPlayer().getUsername()+" gave up!"+"\nWinner: "+ winnerName
+                player.getPlayer().getUsername() + " gave up!" + "\nWinner: " + winnerName
         );
         winProcessor.processWinningState(player);
     }
@@ -148,7 +154,7 @@ public class GameServiceImpl implements GameService {
 
         updateOnlinePlayerState(attacker, move);
 
-        telegramBot.sendMessageToBothPlayers(game,attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.sendMessageToBothPlayers(game, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
         game.setActivePlayer(game.getDefender());
         game.setOffensiveCard(move);
         gameRepository.save(game);
@@ -156,7 +162,7 @@ public class GameServiceImpl implements GameService {
         if (moveValidator.isPlayerWon(attacker)) {
             nominateWinner(attacker);
         }
-        telegramBot.updateAvailableCards(attacker,attacker.getCards());
+        telegramBot.updateAvailableCards(attacker, attacker.getCards());
     }
 
     @Override
@@ -179,7 +185,7 @@ public class GameServiceImpl implements GameService {
         if (moveValidator.isPlayerWon(defender)) {
             nominateWinner(defender);
         }
-        telegramBot.updateAvailableCards(defender,defender.getCards());
+        telegramBot.updateAvailableCards(defender, defender.getCards());
     }
 
     @Override
@@ -266,33 +272,34 @@ public class GameServiceImpl implements GameService {
         onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);
     }
+
     //TODO test it
     private void nominateWinner(OnlinePlayer winner) {
         Game game = winner.getGame();
         Player playerWinner = winner.getPlayer();
         OnlinePlayer loser =
                 game.getAttacker().equals(winner) ?
-                game.getDefender() : game.getAttacker();
+                        game.getDefender() : game.getAttacker();
         Player loserPlayer = loser.getPlayer();
         winProcessor.processWinningState(loser);
-        telegramBot.sendMessageToPlayer(playerWinner,playerWinner.getUsername()+" - won!");
-        telegramBot.sendMessageToPlayer(loserPlayer, playerWinner.getUsername()+" - won!");
+        telegramBot.sendMessageToPlayer(playerWinner, playerWinner.getUsername() + " - won!");
+        telegramBot.sendMessageToPlayer(loserPlayer, playerWinner.getUsername() + " - won!");
     }
 
-    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer){
+    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
-        if(!moveValidator.isCardNeeded(onlinePlayer)){
+        if (!moveValidator.isCardNeeded(onlinePlayer)) {
             log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
-            return saveEntities(onlinePlayer,game);
+            return saveEntities(onlinePlayer, game);
         }
-        int cardsToDraw = moveValidator.isPossibleToDrawCards(onlinePlayer)?
-                        6 - onlinePlayer.getCards().size() :
-                        moveValidator.getValidatedCountToDrawCards(onlinePlayer);
+        int cardsToDraw = moveValidator.isPossibleToDrawCards(onlinePlayer) ?
+                6 - onlinePlayer.getCards().size() :
+                moveValidator.getValidatedCountToDrawCards(onlinePlayer);
         List<Card> cards = cardService.drawCards(game, cardsToDraw);
-        addCardsToPlayer(onlinePlayer,cards);
+        addCardsToPlayer(onlinePlayer, cards);
 
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
-        return saveEntities(onlinePlayer,game);
+        return saveEntities(onlinePlayer, game);
     }
 
 
@@ -322,7 +329,7 @@ public class GameServiceImpl implements GameService {
 
     private void updateOnlinePlayerState(OnlinePlayer player, Card move) {
         Game game = player.getGame();
-        if(player.getCards().remove(move)) {
+        if (player.getCards().remove(move)) {
             log.info("Deleted card " + move + " from player with id: " + player.getId());
             Card card = cardService.getInputtedCardByCodeAndGame(player, move.getCode());
             card.setOnlinePlayer(null);
@@ -331,8 +338,8 @@ public class GameServiceImpl implements GameService {
             player.getCards().forEach(
                     c -> log.info(moveValidator.getPrettyMove(c))
             );
-        }else {
-            log.info("card "+ move +" was not deleted");
+        } else {
+            log.info("card " + move + " was not deleted");
         }
     }
 

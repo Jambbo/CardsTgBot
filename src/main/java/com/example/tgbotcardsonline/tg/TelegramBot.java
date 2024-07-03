@@ -66,17 +66,16 @@ public class TelegramBot extends TelegramLongPollingBot {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
-
-            if (player.isInGame()) {
-                getMessageProcessor().handleGameOperation(messageText, player);
-                return;
-            }
             handleCommands(messageText, player);
         }
     }
 
     @SneakyThrows
     private void handleCommands(String messageText, Player player) {
+        if (player.isInGame()) {
+            getMessageProcessor().handleGameOperation(messageText, player);
+            return;
+        }
         switch (messageText) {
             case "/start" -> sendMessageToPlayer(player, "Hi " + player.getUsername() + " let's play some durak!");
             case "/startgame" -> getSearchRequestService().StartLookForRandomGame(player);
