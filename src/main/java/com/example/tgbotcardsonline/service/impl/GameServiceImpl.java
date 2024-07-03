@@ -75,7 +75,6 @@ public class GameServiceImpl implements GameService {
         Player secondPlayer = onlinePlayer2.getPlayer();
 
         setPlayersInGame(firstPlayer, secondPlayer, onlinePlayer1, onlinePlayer2);
-
 //        gameRepository.save(game);
         setGameToOnlinePlayers(game);
 
@@ -83,8 +82,6 @@ public class GameServiceImpl implements GameService {
 //        gameRepository.save(game);
         setGameToPlayerCards(onlinePlayer1);
         setGameToPlayerCards(onlinePlayer2);
-
-
     }
 
     private void setGameToOnlinePlayers(Game game) {

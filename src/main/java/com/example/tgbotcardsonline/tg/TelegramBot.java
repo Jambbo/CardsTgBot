@@ -97,6 +97,17 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         execute(sendMessage);
     }
+    @SneakyThrows
+    @Async
+    public void sendMessageToPlayer(Player player, String message, String parseMode) {
+        SendMessage sendMessage = SendMessage.builder()
+                .chatId(player.getChatId())
+                .text(message)
+                .parseMode(parseMode)  // Specify Markdown as parse mode
+                .build();
+
+        execute(sendMessage);
+    }
 
     @SneakyThrows
     public void sendMessageToBothPlayers(Game game, String message) {

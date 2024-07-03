@@ -68,18 +68,21 @@ public class SearchRequestImpl implements SearchRequestService {
         String trumpName = trump.name().toUpperCase();
         String suitSymbol = suitSymbols.get(trumpName);
 
-        contactToTelegramBotToSendMessage(player, opponent, trump, suitSymbol, firstAttacker, firstDefender);
+        contactToTelegramBotToSendMessage(game, trump, suitSymbol, firstAttacker, firstDefender);
     }
 
-    private void contactToTelegramBotToSendMessage(Player player, Player opponent, Suit trump, String suitSymbol, Player firstAttacker, Player firstDefender) {
-        telegramBot.sendMessageToPlayer(player, "Trump is: " + trump + " " + suitSymbol);
-        telegramBot.sendMessageToPlayer(opponent, "Trump is: " + trump + " " + suitSymbol);
-        telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
-        telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
-        telegramBot.showAvailableCards(player.getPlayerInGame(), player.getPlayerInGame().getCards());
-        telegramBot.showAvailableCards(opponent.getPlayerInGame(), opponent.getPlayerInGame().getCards());
+    private void contactToTelegramBotToSendMessage(Game game, Suit trump, String suitSymbol, Player firstAttacker, Player firstDefender) {
+
+        String gameFoundMessagePlayer = String.format("Game found! You are playing against [%s](tg://user?id=%d)", firstDefender.getUsername(), firstDefender.getChatId());
+        String gameFoundMessageOpponent = String.format("Game found! You are playing against [%s](tg://user?id=%d)", firstAttacker.getUsername(), firstAttacker.getChatId());
+
+        telegramBot.sendMessageToBothPlayers(game, "Trump is: " + trump + " " + suitSymbol);
+        telegramBot.sendMessageToPlayer(firstAttacker, gameFoundMessagePlayer,"Markdown");
+        telegramBot.sendMessageToPlayer(firstDefender, gameFoundMessageOpponent,"Markdown");
+        telegramBot.showAvailableCards(firstAttacker.getPlayerInGame(), firstAttacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(firstDefender.getPlayerInGame(), firstDefender.getPlayerInGame().getCards());
         telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!");
-        telegramBot.sendMessageToPlayer(firstDefender, "Now is "+ firstAttacker.getUsername()+" turn");
+        telegramBot.sendMessageToPlayer(firstDefender, "Now is " + firstAttacker.getUsername() + " turn");
     }
 
 }
