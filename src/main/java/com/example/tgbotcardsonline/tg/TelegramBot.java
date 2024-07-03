@@ -67,33 +67,22 @@ public class TelegramBot extends TelegramLongPollingBot {
             Long chatId = update.getMessage().getChatId();
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
 
-            SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
-                    .chatId(chatId.toString());
-
             if (player.isInGame()) {
                 getMessageProcessor().handleGameOperation(messageText, player);
                 return;
             }
-            handleCommands(messageText, messageBuilder, player);
-            SendMessage sendMessage = messageBuilder.build();
-
-            if (!isNull(sendMessage)) {
-                execute(sendMessage);
-            }
+            handleCommands(messageText, player);
         }
     }
 
-
-    private void handleCommands(String messageText, SendMessage.SendMessageBuilder messageBuilder, Player player) {
+    @SneakyThrows
+    private void handleCommands(String messageText, Player player) {
         switch (messageText) {
-            case "/start" -> messageBuilder.text(
-                    "Welcome! " + player.getUsername() + "\n Let's play!"
-            );
-            case "/aboba" -> messageBuilder.text("aboba");
+            case "/start" -> sendMessageToPlayer(player, "Hi " + player.getUsername() + " let's play some durak!");
             case "/startgame" -> getSearchRequestService().StartLookForRandomGame(player);
             case "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
             case "/help" -> getMessageProcessor().handleHelpQuery(player);
-            default -> messageBuilder.text("You sent: " + messageText);
+            default -> sendMessageToPlayer(player, messageText + "??");
         }
     }
 
@@ -130,6 +119,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         onlinePlayerRepository.save(onlinePlayer);
 
     }
+
     @SneakyThrows
     public void updateAvailableCards(OnlinePlayer onlinePlayer, List<Card> newCards) {
         Long chatId = onlinePlayer.getPlayer().getChatId();
