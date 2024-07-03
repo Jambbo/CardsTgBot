@@ -22,6 +22,8 @@ public class OnlinePlayer {
     @OneToOne
     @JoinColumn(name = "player_id")
     private Player player;
+    @Column(name = "message_id")
+    private Integer messageId;
     @ManyToOne
     @JoinTable(
             name = "game_players",
@@ -33,7 +35,7 @@ public class OnlinePlayer {
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
             name = "op_cards",
-            joinColumns =@JoinColumn(name = "online_player_id"),
+            joinColumns = @JoinColumn(name = "online_player_id"),
             inverseJoinColumns = @JoinColumn(name = "card_id")
     )
     private List<Card> cards = new ArrayList<>();

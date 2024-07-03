@@ -156,6 +156,7 @@ public class GameServiceImpl implements GameService {
         if (moveValidator.isPlayerWon(attacker)) {
             nominateWinner(attacker);
         }
+        telegramBot.updateAvailableCards(attacker,attacker.getCards());
     }
 
     @Override
@@ -178,6 +179,7 @@ public class GameServiceImpl implements GameService {
         if (moveValidator.isPlayerWon(defender)) {
             nominateWinner(defender);
         }
+        telegramBot.updateAvailableCards(defender,defender.getCards());
     }
 
     @Override
@@ -229,8 +231,8 @@ public class GameServiceImpl implements GameService {
         telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
-        telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
-        telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(attacker.getPlayerInGame(), attacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(defender.getPlayerInGame(), defender.getPlayerInGame().getCards());
     }
 
     private void notifyPLayersAfterFinishAttack(Game game) {
@@ -243,8 +245,8 @@ public class GameServiceImpl implements GameService {
         telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
-        telegramBot.showAvailableCards(attacker.getChatId(), attacker.getPlayerInGame().getCards());
-        telegramBot.showAvailableCards(defender.getChatId(), defender.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(attacker.getPlayerInGame(), attacker.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(defender.getPlayerInGame(), defender.getPlayerInGame().getCards());
     }
 
     private void refillCards(Game game) {

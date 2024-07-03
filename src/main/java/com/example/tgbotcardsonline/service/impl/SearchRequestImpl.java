@@ -76,8 +76,8 @@ public class SearchRequestImpl implements SearchRequestService {
         telegramBot.sendMessageToPlayer(opponent, "Trump is: " + trump + " " + suitSymbol);
         telegramBot.sendMessageToPlayer(player, "Game found! You are playing against " + opponent.getUsername());
         telegramBot.sendMessageToPlayer(opponent, "Game found! You are playing against " + player.getUsername());
-        telegramBot.showAvailableCards(player.getChatId(), player.getPlayerInGame().getCards());
-        telegramBot.showAvailableCards(opponent.getChatId(), opponent.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(player.getPlayerInGame(), player.getPlayerInGame().getCards());
+        telegramBot.showAvailableCards(opponent.getPlayerInGame(), opponent.getPlayerInGame().getCards());
         telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!");
         telegramBot.sendMessageToPlayer(firstDefender, "Now is "+ firstAttacker.getUsername()+" turn");
     }

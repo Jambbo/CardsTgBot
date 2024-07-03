@@ -32,7 +32,8 @@ CREATE TABLE Game
 CREATE TABLE online_player
 (
     id        BIGSERIAL PRIMARY KEY,
-    player_id INT
+    player_id INT,
+    message_id INT
 );
 CREATE TABLE search_request
 (

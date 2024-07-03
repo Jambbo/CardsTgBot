@@ -1,8 +1,10 @@
 package com.example.tgbotcardsonline.tg;
 
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.response.Card;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.service.PlayerService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.service.processors.ButtonProcessor;
@@ -18,6 +20,7 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
@@ -33,18 +36,20 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final PlayerService playerService;
     private final ApplicationContext applicationContext;
     private final CardProcessor cardProcessor;
+    private final OnlinePlayerRepository onlinePlayerRepository;
     @Value("${bot.name}")
     private String name;
 
     public TelegramBot(
             @Value("${bot.token}") String botToken,
             CardProcessor cardProcessor, PlayerService playerService,
-            ApplicationContext applicationContext
+            ApplicationContext applicationContext, OnlinePlayerRepository onlinePlayerRepository
     ) {
         super(new DefaultBotOptions(), botToken);
         this.cardProcessor = cardProcessor;
         this.playerService = playerService;
         this.applicationContext = applicationContext;
+        this.onlinePlayerRepository = onlinePlayerRepository;
         generateMenuButtons();
     }
 
@@ -112,11 +117,30 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    public void showAvailableCards(long chatId, List<Card> cards) {
+    public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
+        Long chatId = onlinePlayer.getPlayer().getChatId();
+
         SendMessage message = cardProcessor.createMessage(chatId);
         InlineKeyboardMarkup markup = cardProcessor.createMarkup(cards);
         message.setReplyMarkup(markup);
-        execute(message);
+
+        Integer messageId = execute(message).getMessageId();
+
+        onlinePlayer.setMessageId(messageId);
+        onlinePlayerRepository.save(onlinePlayer);
+
+    }
+    @SneakyThrows
+    public void updateAvailableCards(OnlinePlayer onlinePlayer, List<Card> newCards) {
+        Long chatId = onlinePlayer.getPlayer().getChatId();
+        Integer messageId = onlinePlayer.getMessageId();
+
+        EditMessageText editMessage = new EditMessageText();
+        editMessage.setChatId(chatId);
+        editMessage.setMessageId(messageId);
+        editMessage.setText(cardProcessor.createMessage(chatId).getText());
+        editMessage.setReplyMarkup(cardProcessor.createMarkup(newCards));
+        execute(editMessage);
     }
 
     @SneakyThrows
