@@ -94,20 +94,21 @@ public class GameServiceImpl implements GameService {
         secondPlayer.setInGame(true);
         firstPlayer.setPlayerInGame(player1);
         secondPlayer.setPlayerInGame(player2);
+
     }
 
     private void setGameToCards(Game game) {
         List<Card> cards = game.getCards();
         cards.forEach(c -> c.setGameId(game.getId()));
         cardRepository.saveAll(cards);
-        gameRepository.save(game);
+//        gameRepository.save(game);
     }
 
     private void setGameToPlayerCards(OnlinePlayer player1) {
         List<Card> cards = player1.getCards();
         cards.forEach(c -> c.setGameId(player1.getGame().getId()));
         cardRepository.saveAll(cards);
-        onlinePlayerRepository.save(player1);
+//        onlinePlayerRepository.save(player1);
     }
 
     @Override

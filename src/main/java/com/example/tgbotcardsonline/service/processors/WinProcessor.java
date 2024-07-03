@@ -40,8 +40,10 @@ public class WinProcessor {
         playerRepository.saveAll(List.of(attackerPlayer,defenderPlayer));
         gameRepository.save(game);
 //        cardRepository.deleteAll(null);
-        cardRepository.deleteAll(player.getGame().getCards());
-        cardRepository.deleteAllCardsByGameId(player.getGame().getId());
+        List<Card> cards = cardRepository.findAllByGameId(game.getId());
+        cardRepository.deleteAll(cards);
+//        cardRepository.deleteAll(game.getCards());
+//        cardRepository.deleteAllCardsByGameId(game.getId());
         onlinePlayerRepository.deleteAll(List.of(attacker,defender));
     }
 
