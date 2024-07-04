@@ -30,7 +30,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
 
 
     @Override
-    public OnlinePlayer createOnlinePlayer(Player player,String deckId){
+    public OnlinePlayer createOnlinePlayer(Player player, String deckId) {
         OnlinePlayer onlinePlayer = onlinePlayerMapper.toOnlinePlayer(player);
         onlinePlayerRepository.save(onlinePlayer);
         DrawCardsResponse drawCardsResponse = getDrawCardsResponseToCreatePlayer(deckId);
@@ -50,7 +50,6 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         onlinePlayer.setCards(newCards);
         onlinePlayerRepository.save(onlinePlayer);
     }
-
 
 
     private DrawCardsResponse getDrawCardsResponseToCreatePlayer(String deckId) {

@@ -1,8 +1,10 @@
 package com.example.tgbotcardsonline.tg;
 
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.response.Card;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.service.PlayerService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.service.processors.ButtonProcessor;
@@ -18,6 +20,7 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
@@ -33,18 +36,20 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final PlayerService playerService;
     private final ApplicationContext applicationContext;
     private final CardProcessor cardProcessor;
+    private final OnlinePlayerRepository onlinePlayerRepository;
     @Value("${bot.name}")
     private String name;
 
     public TelegramBot(
             @Value("${bot.token}") String botToken,
             CardProcessor cardProcessor, PlayerService playerService,
-            ApplicationContext applicationContext
+            ApplicationContext applicationContext, OnlinePlayerRepository onlinePlayerRepository
     ) {
         super(new DefaultBotOptions(), botToken);
         this.cardProcessor = cardProcessor;
         this.playerService = playerService;
         this.applicationContext = applicationContext;
+        this.onlinePlayerRepository = onlinePlayerRepository;
         generateMenuButtons();
     }
 
@@ -61,34 +66,22 @@ public class TelegramBot extends TelegramLongPollingBot {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             Player player = playerService.getByChatIdOrElseCreateNew(chatId, update.getMessage());
-
-            SendMessage.SendMessageBuilder messageBuilder = SendMessage.builder()
-                    .chatId(chatId.toString());
-
-            if (player.isInGame()) {
-                getMessageProcessor().handleGameOperation(messageText, player);
-                return;
-            }
-            handleCommands(messageText, messageBuilder, player);
-            SendMessage sendMessage = messageBuilder.build();
-
-            if (!isNull(sendMessage)) {
-                execute(sendMessage);
-            }
+            handleCommands(messageText, player);
         }
     }
 
-
-    private void handleCommands(String messageText, SendMessage.SendMessageBuilder messageBuilder, Player player) {
+    @SneakyThrows
+    private void handleCommands(String messageText, Player player) {
+        if (player.isInGame()) {
+            getMessageProcessor().handleGameOperation(messageText, player);
+            return;
+        }
         switch (messageText) {
-            case "/start" -> messageBuilder.text(
-                    "Welcome! " + player.getUsername() + "\n Let's play!"
-            );
-            case "/aboba" -> messageBuilder.text("aboba");
+            case "/start" -> sendMessageToPlayer(player, "Hi " + player.getUsername() + " let's play some durak!");
             case "/startgame" -> getSearchRequestService().StartLookForRandomGame(player);
             case "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
             case "/help" -> getMessageProcessor().handleHelpQuery(player);
-            default -> messageBuilder.text("You sent: " + messageText);
+            default -> sendMessageToPlayer(player, messageText + "??");
         }
     }
 
@@ -104,6 +97,17 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         execute(sendMessage);
     }
+    @SneakyThrows
+    @Async
+    public void sendMessageToPlayer(Player player, String message, String parseMode) {
+        SendMessage sendMessage = SendMessage.builder()
+                .chatId(player.getChatId())
+                .text(message)
+                .parseMode(parseMode)  // Specify Markdown as parse mode
+                .build();
+
+        execute(sendMessage);
+    }
 
     @SneakyThrows
     public void sendMessageToBothPlayers(Game game, String message) {
@@ -112,11 +116,31 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    public void showAvailableCards(long chatId, List<Card> cards) {
+    public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
+        Long chatId = onlinePlayer.getPlayer().getChatId();
+
         SendMessage message = cardProcessor.createMessage(chatId);
         InlineKeyboardMarkup markup = cardProcessor.createMarkup(cards);
         message.setReplyMarkup(markup);
-        execute(message);
+
+        Integer messageId = execute(message).getMessageId();
+
+        onlinePlayer.setMessageId(messageId);
+        onlinePlayerRepository.save(onlinePlayer);
+
+    }
+
+    @SneakyThrows
+    public void updateAvailableCards(OnlinePlayer onlinePlayer, List<Card> newCards) {
+        Long chatId = onlinePlayer.getPlayer().getChatId();
+        Integer messageId = onlinePlayer.getMessageId();
+
+        EditMessageText editMessage = new EditMessageText();
+        editMessage.setChatId(chatId);
+        editMessage.setMessageId(messageId);
+        editMessage.setText(cardProcessor.createMessage(chatId).getText());
+        editMessage.setReplyMarkup(cardProcessor.createMarkup(newCards));
+        execute(editMessage);
     }
 
     @SneakyThrows

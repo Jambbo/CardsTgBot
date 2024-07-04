@@ -41,7 +41,7 @@ public class MessageProcessor {
                 handleHelpQuery(player);
                 return;
             }
-            default -> log.info(player.getUsername()+ " wrote: " + messageText);
+            default -> log.info(player.getUsername() + " wrote: " + messageText);
         }
 
         boolean isPlayersTurn = isPlayersMove(player, game);
@@ -51,8 +51,8 @@ public class MessageProcessor {
                 case "take cards" -> gameService.takeCards(player);
                 default -> telegramBot.sendMessageToPlayer(player, "Unknown command.");
             }
-        }else{
-            telegramBot.sendMessageToPlayer(player,"It's not your turn.");
+        } else {
+            telegramBot.sendMessageToPlayer(player, "It's not your turn.");
         }
 
     }
@@ -84,6 +84,7 @@ public class MessageProcessor {
             return;
         }
         gameService.makeMove(player, playersCard);
+
     }
 
     public void handleMyProfileQuery(Player player) {
