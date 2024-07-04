@@ -58,11 +58,17 @@ public class CardServiceImpl implements CardService {
     public List<Card> drawCards(Game game, int howMany) {
         List<Card> cards = game.getCards();
         List<Card> askedCards = new ArrayList<>();
+
+        if (howMany > cards.size()) {
+            howMany = cards.size();
+        }
+
         for (int i = 0; i < howMany; i++) {
             Card c = cards.get(i);
             askedCards.add(c);
-            cards.remove(c);
         }
+
+        cards.removeAll(askedCards);
         game.setCards(cards);
         gameRepository.save(game);
         return askedCards;

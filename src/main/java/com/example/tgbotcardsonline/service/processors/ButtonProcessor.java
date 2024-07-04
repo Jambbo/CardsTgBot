@@ -45,7 +45,7 @@ public class ButtonProcessor {
     private void getSpecificButtonForPlayer(Player player, KeyboardRow row) {
         OnlinePlayer playerInGame = player.getPlayerInGame();
         if(isNull(playerInGame)){
-            log.error("game is not started yet.");
+            log.info("game is not started yet.");
             return;
         }
         Game game = playerInGame.getGame();

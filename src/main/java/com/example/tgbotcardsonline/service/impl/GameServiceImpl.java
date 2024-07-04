@@ -75,11 +75,9 @@ public class GameServiceImpl implements GameService {
         Player secondPlayer = onlinePlayer2.getPlayer();
 
         setPlayersInGame(firstPlayer, secondPlayer, onlinePlayer1, onlinePlayer2);
-//        gameRepository.save(game);
         setGameToOnlinePlayers(game);
 
         setGameToCards(game);
-//        gameRepository.save(game);
         setGameToPlayerCards(onlinePlayer1);
         setGameToPlayerCards(onlinePlayer2);
     }
@@ -104,24 +102,26 @@ public class GameServiceImpl implements GameService {
         List<Card> cards = game.getCards();
         cards.forEach(c -> c.setGameId(game.getId()));
         cardRepository.saveAll(cards);
-//        gameRepository.save(game);
     }
 
     private void setGameToPlayerCards(OnlinePlayer player1) {
         List<Card> cards = player1.getCards();
         cards.forEach(c -> c.setGameId(player1.getGame().getId()));
         cardRepository.saveAll(cards);
-//        onlinePlayerRepository.save(player1);
     }
 
     @Override
     public void resign(OnlinePlayer player) {
-        String winnerName = winProcessor.getWinnerNameDuringResign(player);
-        telegramBot.sendMessageToBothPlayers(
-                player.getGame(),
-                player.getPlayer().getUsername() + " gave up!" + "\nWinner: " + winnerName
-        );
+        Player winner = winProcessor.getWinnerDuringResign(player);
         winProcessor.processWinningState(player);
+        telegramBot.sendMessageToPlayer(
+                winner,
+                player.getPlayer().getUsername() + " gave up!" + "\nWinner: " + winner.getUsername()
+        );
+        telegramBot.sendMessageToPlayer(
+                player.getPlayer(),
+                player.getPlayer().getUsername() + " gave up!" + "\nWinner: " + winner.getUsername()
+        );
     }
 
     @Override
@@ -158,6 +158,7 @@ public class GameServiceImpl implements GameService {
 
         if (moveValidator.isPlayerWon(attacker)) {
             nominateWinner(attacker);
+            return;
         }
         telegramBot.updateAvailableCards(attacker, attacker.getCards());
     }
@@ -181,6 +182,7 @@ public class GameServiceImpl implements GameService {
 
         if (moveValidator.isPlayerWon(defender)) {
             nominateWinner(defender);
+            return;
         }
         telegramBot.updateAvailableCards(defender, defender.getCards());
     }

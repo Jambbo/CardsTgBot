@@ -6,6 +6,8 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
+import com.example.tgbotcardsonline.model.response.DeckResponse;
+import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import static java.util.Objects.isNull;
 @RequiredArgsConstructor
 public class MoveValidator {
     private final TelegramBot telegramBot;
+    private final DeckResponseRepository deckResponseRepository;
 
     public boolean isDefenceMoveValid(Game game, Card defendingCard) {
         Suit trumpSuit = game.getTrump();
@@ -96,9 +99,11 @@ public class MoveValidator {
     }
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(
+                onlinePlayer.getGame().getDeckId()
+        );
         List<Card> cards = onlinePlayer.getCards();
-        Game game = onlinePlayer.getGame();
-        return cards.isEmpty() && game.getCards().isEmpty();
+        return cards.isEmpty() && deckResponse.getRemaining()==0;
     }
 
 }

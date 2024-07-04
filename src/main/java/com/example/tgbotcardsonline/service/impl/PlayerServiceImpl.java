@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 public class PlayerServiceImpl implements PlayerService {
@@ -25,6 +23,7 @@ public class PlayerServiceImpl implements PlayerService {
                     .gamesPlayed(0L)
                     .wins(0L)
                     .build();
+
             playerStatisticsRepository.save(playerStatistics);
 
             Player newPlayer = Player.builder()
@@ -32,7 +31,7 @@ public class PlayerServiceImpl implements PlayerService {
                     .username(
                             message.getFrom().getUserName() != null
                                     ? message.getFrom().getUserName()
-                                    : "Player"
+                                    : "Player"+message.getFrom().getId()
                     )
                     .inGame(false)
                     .playerStatistics(playerStatistics)

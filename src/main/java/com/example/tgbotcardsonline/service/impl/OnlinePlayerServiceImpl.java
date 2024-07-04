@@ -24,8 +24,6 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private final CardService cardService;
     private final OnlinePlayerMapper onlinePlayerMapper;
     private final CardRepository cardRepository;
-    private final TelegramBot telegramBot;
-    private final PlayerRepository playerRepository;
     private final CardMapper cardMapper;
 
 
