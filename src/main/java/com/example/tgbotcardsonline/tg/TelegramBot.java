@@ -103,7 +103,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(player.getChatId())
                 .text(message)
-                .parseMode(parseMode)  // Specify Markdown as parse mode
+                .parseMode(parseMode)
                 .build();
 
         execute(sendMessage);

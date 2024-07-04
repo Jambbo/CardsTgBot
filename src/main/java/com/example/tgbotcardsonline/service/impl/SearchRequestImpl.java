@@ -48,13 +48,13 @@ public class SearchRequestImpl implements SearchRequestService {
 //                return;
 //            }
             Game game = gameService.createGame1v1ThrowIn(player, opponent);
-            notifyUsersAboutStartOfGame(player, opponent, game);
+            notifyUsersAboutStartOfGame(game);
             searchRequestRepository.delete(searchRequest.get());
 
         }
     }
 
-    private void notifyUsersAboutStartOfGame(Player player, Player opponent, Game game) {
+    private void notifyUsersAboutStartOfGame(Game game) {
         Player firstAttacker = game.getActivePlayer().getPlayer();
         Player firstDefender = game.getDefender().getPlayer();
         Map<String, String> suitSymbols = Map.of(
