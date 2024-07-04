@@ -66,7 +66,6 @@ public class WinProcessor {
         winnerStatistics.setGamesPlayed(winnerStatistics.getGamesPlayed()+1);
 
         PlayerStatistics loserStatistics = loser.getPlayerStatistics();
-        loserStatistics.setWins(loserStatistics.getWins()-1);
         loserStatistics.setGamesPlayed(loserStatistics.getGamesPlayed()+1);
 
         playerStatisticsRepository.save(winnerStatistics);
