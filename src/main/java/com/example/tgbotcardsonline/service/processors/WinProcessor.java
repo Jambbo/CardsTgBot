@@ -7,12 +7,15 @@ import com.example.tgbotcardsonline.model.PlayerStatistics;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class WinProcessor {
     private final CardRepository cardRepository;
     private final GameRepository gameRepository;
@@ -31,11 +34,15 @@ public class WinProcessor {
         resetPlayerStates(attackerPlayer, defenderPlayer);
         resetGameStates(game);
 
-        playerRepository.saveAll(List.of(attackerPlayer, defenderPlayer));
-        gameRepository.save(game);
-        onlinePlayerRepository.deleteAll(List.of(attacker, defender));
-        List<Card> cards = cardRepository.findAllByGameId(game.getId());
-        cardRepository.deleteAll(cards);
+        try {
+            playerRepository.saveAll(List.of(attackerPlayer, defenderPlayer));
+            gameRepository.save(game);
+            onlinePlayerRepository.deleteAll(List.of(attacker, defender));
+            List<Card> cards = cardRepository.findAllByGameId(game.getId());
+            cardRepository.deleteAll(cards);
+        }catch (DataIntegrityViolationException e){
+            log.error("Data integrity violation: {}", e.getMessage());
+        }
     }
 
     private static void resetGameStates(Game game) {

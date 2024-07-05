@@ -28,12 +28,14 @@ public class ButtonProcessor {
     public void createButton(Player player, SendMessage sendMessage) {
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> keyboardRows = new ArrayList<>();
-        KeyboardRow row = new KeyboardRow();
 
-        getSpecificButtonForPlayer(player, row);
-
-        keyboardRows.add(row);
-
+        if(player.isInGame()) {
+            KeyboardRow row = new KeyboardRow();
+            getSpecificButtonForPlayer(player, row);
+            keyboardRows.add(row);
+        }else{
+            keyboardRows = getMainMenuButtons();
+        }
 
         keyboardMarkup.setResizeKeyboard(true);
         keyboardMarkup.setOneTimeKeyboard(true);
@@ -48,6 +50,7 @@ public class ButtonProcessor {
             log.info("game is not started yet.");
             return;
         }
+
         Game game = playerInGame.getGame();
         if(game.getAttacker().equals(playerInGame)){
             row.add("finish attack");
@@ -58,6 +61,21 @@ public class ButtonProcessor {
         }
         row.add("resign");
 
+    }
+
+    public List<KeyboardRow> getMainMenuButtons(){
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add("\uD83D\uDCF1 My profile");
+//        row1.add("\uD83D\uDCCA My statistics");
+
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add("\uD83C\uDFB2 Start random game");
+
+        keyboardRows.add(row1);
+        keyboardRows.add(row2);
+        return keyboardRows;
     }
 
 

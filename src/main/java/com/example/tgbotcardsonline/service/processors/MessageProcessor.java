@@ -96,13 +96,18 @@ public class MessageProcessor {
 
         String message = String.format(
                 """
+                        
+                        👤 Name: %s
+                        🆔 ID: %d
+                        
+                        
                         📊 *Your Stats* 📊
-
+                        
                         🏅 *Games Played:* %d
                         🏆 *Games Won:* %d
                         ❌ *Games Lost:* %d
                         📈 *Win Rate:* %.2f%%""",
-                gamesPlayed, wins, losses, winRate
+                player.getUsername(), player.getChatId(), gamesPlayed, wins, losses, winRate
         );
 
         telegramBot.sendMessageToPlayer(player, message);

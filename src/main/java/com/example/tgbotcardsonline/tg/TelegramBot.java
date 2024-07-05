@@ -78,8 +78,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
         switch (messageText) {
             case "/start" -> sendMessageToPlayer(player, "Hi " + player.getUsername() + " let's play some durak!");
-            case "/startgame" -> getSearchRequestService().StartLookForRandomGame(player);
-            case "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
+            case "\uD83D\uDCF1 My profile", "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
+            case "/startgame", "\uD83C\uDFB2 Start random game" -> getSearchRequestService().StartLookForRandomGame(player);
             case "/help" -> getMessageProcessor().handleHelpQuery(player);
             default -> sendMessageToPlayer(player, messageText + "??");
         }

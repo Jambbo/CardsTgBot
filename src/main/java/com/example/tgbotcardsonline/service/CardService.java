@@ -11,7 +11,7 @@ public interface CardService {
 
     String brandNewDeck();
 
-    DrawCardsResponse drawACardAPI(String deckId, int howMany);
+    DrawCardsResponse drawACardFromCardsClient(String deckId, int howMany);
 
     List<Card> drawCards(Game game, int howMany);
 

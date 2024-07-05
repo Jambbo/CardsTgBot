@@ -34,15 +34,14 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public String brandNewDeck() {
-        ResponseEntity<DeckResponse> deckResponseResponseEntity = cardsClient.contactToPartialDeck();
-        DeckResponse deckResponse = deckResponseResponseEntity.getBody();
+        DeckResponse deckResponse = cardsClient.contactToPartialDeck();
         deckResponseRepository.save(deckResponse);
         log.info(deckResponse.toString());
         return deckResponse.getDeck_id();
     }
 
     @Override
-    public DrawCardsResponse drawACardAPI(String deckId, int howMany) {
+    public DrawCardsResponse drawACardFromCardsClient(String deckId, int howMany) {
         try {
             DrawCardsResponse drawCardsResponse = cardsClient.contactToDrawACard(deckId, howMany);
             DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);

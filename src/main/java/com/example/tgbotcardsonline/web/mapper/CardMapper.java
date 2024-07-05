@@ -5,6 +5,9 @@ import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
 import org.mapstruct.Mapper;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Mapper(componentModel = "spring")
 public interface CardMapper {
 
@@ -38,6 +41,12 @@ public interface CardMapper {
                 .value(Value.forValue(value))
                 .suit(Suit.forSuit(suit))
                 .build();
+    }
+
+    default List<Card> toCardsFromStringCodes(List<String> cardCodes) {
+        return cardCodes.stream()
+                .map(this::toCardFromStringCode)
+                .collect(Collectors.toList());
     }
 
 }

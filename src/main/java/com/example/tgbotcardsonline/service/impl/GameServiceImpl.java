@@ -1,6 +1,7 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Game;
+import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
@@ -50,13 +51,13 @@ public class GameServiceImpl implements GameService {
     }
 
     private Game buildGame(String deckId, OnlinePlayer player1, OnlinePlayer player2) {
-        Suit trump = getRandomTrump();
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
-        int remaining = deckResponse.getRemaining();
-        List<Card> cards = cardService.drawACardAPI(deckId, remaining).getCards();
-        cardRepository.saveAll(cards);
+        List<Card> cards = getCards(deckId);
+        Card card = cards.get(cards.size() - 1);
+        Suit trump = card.getSuit();
         OnlinePlayer firstAttacker = countWhoAttackFirst(player1, player2, trump);
         OnlinePlayer defender = firstAttacker.equals(player1) ? player2 : player1;
+        telegramBot.sendMessageToPlayer(player1.getPlayer(),"Trump card is:  "+moveValidator.getPrettyMove(card));
+        telegramBot.sendMessageToPlayer(player2.getPlayer(),"Trump card is:  "+moveValidator.getPrettyMove(card));
         return Game.builder()
                 .deckId(deckId)
                 .trump(trump)
@@ -67,6 +68,15 @@ public class GameServiceImpl implements GameService {
                 .winner(null)
                 .build();
     }
+
+    private List<Card> getCards(String deckId) {
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
+        int remaining = deckResponse.getRemaining();
+        List<Card> cards = cardService.drawACardFromCardsClient(deckId, remaining).getCards();
+        cardRepository.saveAll(cards);
+        return cards;
+    }
+
 
     private void updatePlayerStates(Game game) {
         OnlinePlayer onlinePlayer1 = game.getAttacker();
@@ -346,12 +356,6 @@ public class GameServiceImpl implements GameService {
         cardRepository.save(card);
         onlinePlayerRepository.save(player);
         gameRepository.save(game);
-    }
-
-    public Suit getRandomTrump() {
-        Suit[] suits = Suit.values();
-        Random random = new Random();
-        return suits[random.nextInt(suits.length)];
     }
 
 

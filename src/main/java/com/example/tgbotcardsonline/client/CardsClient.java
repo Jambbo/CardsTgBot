@@ -1,10 +1,14 @@
 package com.example.tgbotcardsonline.client;
 
+import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DeckResponse;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
+import com.example.tgbotcardsonline.repository.DeckResponseRepository;
+import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
@@ -12,14 +16,15 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @Slf4j
 public class CardsClient {
-    private final RestTemplate restTemplate;
+    private Queue<String> deck;
+    private final CardMapper cardMapper;
+    private final DeckResponseRepository deckResponseRepository;
     public static final List<String> cards= List.of(
             "6S", "7S", "8S", "9S", "0S", "JS", "QS", "KS", "AS",
             "6D", "7D", "8D", "9D", "0D", "JD", "QD", "KD", "AD",
@@ -32,35 +37,66 @@ public class CardsClient {
             "S", "♠",
             "C", "♣"
     );
-    public CardsClient() {
-        this.restTemplate = new RestTemplate();
-        this.restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+    public CardsClient(
+            CardMapper cardMapper,
+            DeckResponseRepository deckResponseRepository
+    ) {
+        newDeck();
+        this.cardMapper = cardMapper;
+        this.deckResponseRepository = deckResponseRepository;
     }
 
-    public ResponseEntity<DeckResponse> contactToPartialDeck(){
-        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/new/shuffle/")
-                .queryParam("cards", String.join(",", cards))
-                .build()
-                .toUri();
+    public void newDeck() {
+        List<String> deckList = new LinkedList<>(cards);
+        Collections.shuffle(deckList);
+        deck = new LinkedList<>(deckList);
+        log.info("New deck created and shuffled: {}", deck);
+    }
 
-        return restTemplate.getForEntity(uri, DeckResponse.class);
+    public void shuffleDeck() {
+        List<String> deckList = new LinkedList<>(deck);
+        Collections.shuffle(deckList);
+        deck = new LinkedList<>(deckList);
+        log.info("Deck shuffled: {}", deck);
+    }
+
+    public List<String> drawCards(int howMany) {
+        List<String> drawnCards = new LinkedList<>();
+        for (int i = 0; i < howMany; i++) {
+            if (deck.isEmpty()) {
+                log.warn("No more cards to draw.");
+                break;
+            }
+            drawnCards.add(deck.poll());
+        }
+        log.info("Cards drawn: {}", drawnCards);
+        return drawnCards;
+    }
+
+    public DeckResponse contactToPartialDeck(){
+        newDeck();
+        return DeckResponse.builder()
+                .deck_id(UUID.randomUUID().toString())
+                .shuffled(true)
+                .success(true)
+                .remaining(36)
+                .build();
     }
     public DrawCardsResponse contactToDrawACard(String deckId,int howMany){
-        RestTemplate restTemplate = new RestTemplate();
-        URI uri = UriComponentsBuilder.fromUriString("https://www.deckofcardsapi.com/api/deck/"+deckId+"/draw/?count="+howMany)
-                .build()
-                .toUri();
-        try {
-            DrawCardsResponse response = restTemplate.getForObject(uri, DrawCardsResponse.class);
-            log.info("Response received: {}", new ObjectMapper().writeValueAsString(response));
-            if (response == null || !response.isSuccess()) {
-                throw new RuntimeException("Failed to draw cards: response is null or not successful");
-            }
-            return response;
-        } catch (Exception e) {
-            log.error("Failed to draw cards from deck {}: {}", deckId, e.getMessage());
-            throw new RuntimeException("Failed to draw cards: " + e.getLocalizedMessage(), e);
-        }
+        DeckResponse deckResponse = deckResponseRepository.findByDeckId(deckId);
+        int remaining = deckResponse.getRemaining();
+        int newRemaining = remaining - howMany;
+        deckResponse.setRemaining(newRemaining);
+        deckResponseRepository.save(deckResponse);
+
+        List<String> strings = drawCards(howMany);
+        List<Card> cards = cardMapper.toCardsFromStringCodes(strings);
+
+        return DrawCardsResponse.builder()
+                .cards(cards)
+                .success(true)
+                .remaining(newRemaining)
+                .build();
     }
     public static String containsCard(String input) {
         String normalizedInput = input.replaceAll("\\s+", "").toUpperCase();

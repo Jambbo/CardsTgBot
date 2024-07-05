@@ -6,10 +6,8 @@ import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.response.DrawCardsResponse;
 import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
-import com.example.tgbotcardsonline.repository.PlayerRepository;
 import com.example.tgbotcardsonline.service.CardService;
 import com.example.tgbotcardsonline.service.OnlinePlayerService;
-import com.example.tgbotcardsonline.tg.TelegramBot;
 import com.example.tgbotcardsonline.web.mapper.CardMapper;
 import com.example.tgbotcardsonline.web.mapper.OnlinePlayerMapper;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +51,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
     private DrawCardsResponse getDrawCardsResponseToCreatePlayer(String deckId) {
         DrawCardsResponse drawCardsResponse;
         try {
-            drawCardsResponse = cardService.drawACardAPI(deckId, 6);
+            drawCardsResponse = cardService.drawACardFromCardsClient(deckId, 6);
             if (drawCardsResponse == null || drawCardsResponse.getCards() == null) {
                 throw new RuntimeException("DrawCardsResponse or its cards are null");
             }
