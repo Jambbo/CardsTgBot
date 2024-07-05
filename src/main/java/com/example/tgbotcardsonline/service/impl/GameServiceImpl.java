@@ -269,14 +269,6 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer attackerWithRefilledCards = refillCardsToPlayer(game.getAttacker());
         OnlinePlayer defenderWithRefilledCards = refillCardsToPlayer(game.getDefender());
 
-
-        if (attackerWithRefilledCards.getCards().isEmpty()) {
-            nominateWinner(attackerWithRefilledCards);
-            return;
-        }
-        if (defenderWithRefilledCards.getCards().isEmpty()) {
-            nominateWinner(defenderWithRefilledCards);
-        }
         onlinePlayerRepository.save(attackerWithRefilledCards);
         onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);

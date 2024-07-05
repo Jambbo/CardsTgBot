@@ -24,21 +24,45 @@ public class MoveValidator {
     private final DeckResponseRepository deckResponseRepository;
 
     public boolean isDefenceMoveValid(Game game, Card defendingCard) {
-        Suit trumpSuit = game.getTrump();
-        Card attackingCard = game.getOffensiveCard();
-        if (attackingCard.getSuit().equals(defendingCard.getSuit()) &&
-                defendingCard.getValue().isHigherThan(attackingCard.getValue())) {
-            return true;
-        }
-        return defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit);
+//        Suit trumpSuit = game.getTrump();
+//        Card attackingCard = game.getOffensiveCard();
+//        if (attackingCard.getSuit().equals(defendingCard.getSuit()) &&
+//                defendingCard.getValue().isHigherThan(attackingCard.getValue())) {
+//            return true;
+//        }
+//        return defendingCard.getSuit().equals(trumpSuit) && !attackingCard.getSuit().equals(trumpSuit);
+        return true;
     }
 
     public boolean isAttackMoveValid(Game game, Card playerMove) {
-        List<Card> beatenCards = game.getBeaten();
+            List<Card> beatenCards = game.getBeaten();
+        OnlinePlayer defender = game.getDefender();
+        int defenderCardCount = defender.getCards().size();
+        int deckSize = game.getCards().size();
+
+        int currentAttackCount = beatenCards.size() / 2 + 1;
+
+        if (deckSize == 24 && currentAttackCount > 5) {
+            telegramBot.sendMessageToPlayer(
+                    game.getAttacker().getPlayer(),
+                    "You are not able to throw more than 5 cards as it is first attack in game. Finish attack."
+            );
+            return false;
+        }
+
+        if (defenderCardCount<1) {
+            telegramBot.sendMessageToPlayer(
+                    game.getAttacker().getPlayer(),
+                    "Your opponent doesn't have cards. Finish attack."
+            );
+            return false;
+        }
+
         if (beatenCards.isEmpty()) {
             return true;
         }
-        return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
+//        return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
+        return true;
     }
 
     public int getValidatedCountToDrawCards(OnlinePlayer player) {
@@ -99,11 +123,9 @@ public class MoveValidator {
     }
 
     public boolean isPlayerWon(OnlinePlayer onlinePlayer) {
-        DeckResponse deckResponse = deckResponseRepository.findByDeckId(
-                onlinePlayer.getGame().getDeckId()
-        );
         List<Card> cards = onlinePlayer.getCards();
-        return cards.isEmpty() && deckResponse.getRemaining()==0;
+        Game game = onlinePlayer.getGame();
+        return cards.isEmpty() && game.getCards().isEmpty();
     }
 
 }
