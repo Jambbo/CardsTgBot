@@ -203,8 +203,8 @@ public class GameServiceImpl implements GameService {
         log.info(player.getUsername() + " trying to finish attack. That's possible ? =" + possibleToFinishMove);
         if (possibleToFinishMove) {
             game.setBeaten(new ArrayList<>());
-            switchTurnsAtFinishAttack(game);
             refillCards(game);
+            switchTurnsAtFinishAttack(game);
             gameRepository.save(game);
             notifyPLayersAfterFinishAttack(game);
         }
@@ -269,12 +269,11 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer attackerWithRefilledCards = refillCardsToPlayer(game.getAttacker());
         OnlinePlayer defenderWithRefilledCards = refillCardsToPlayer(game.getDefender());
 
-        onlinePlayerRepository.save(attackerWithRefilledCards);
-        onlinePlayerRepository.save(defenderWithRefilledCards);
+//        onlinePlayerRepository.save(attackerWithRefilledCards);
+//        onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);
     }
 
-    //TODO test it
     private void nominateWinner(OnlinePlayer winner) {
         Game game = winner.getGame();
         Player playerWinner = winner.getPlayer();
@@ -305,16 +304,16 @@ public class GameServiceImpl implements GameService {
 
 
     private OnlinePlayer saveEntities(OnlinePlayer onlinePlayer, Game game) {
-        onlinePlayerRepository.save(onlinePlayer);
+//        onlinePlayerRepository.save(onlinePlayer);
         gameRepository.save(game);
         return onlinePlayer;
     }
 
     private void addCardsToPlayer(OnlinePlayer onlinePlayer, List<Card> cards) {
         onlinePlayer.getCards().addAll(cards);
+        onlinePlayerRepository.save(onlinePlayer);
         cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));
         cardRepository.saveAll(cards);
-        onlinePlayerRepository.save(onlinePlayer);
     }
 
     private void switchTurnsAtFinishAttack(Game game) {
