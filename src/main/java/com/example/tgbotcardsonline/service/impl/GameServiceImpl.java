@@ -1,7 +1,6 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Game;
-import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
@@ -195,6 +194,17 @@ public class GameServiceImpl implements GameService {
             return;
         }
         telegramBot.updateAvailableCards(defender, defender.getCards());
+        checkOnFinishAttack(game);
+    }
+
+    private void checkOnFinishAttack(Game game) {
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        List<Card> attackerCards = attacker.getCards();
+        List<Card> defenderCards = defender.getCards();
+        if(attackerCards.isEmpty() || defenderCards.isEmpty()){
+            finishAttack(attacker.getPlayer(),game);
+        }
     }
 
     @Override
@@ -203,8 +213,8 @@ public class GameServiceImpl implements GameService {
         log.info(player.getUsername() + " trying to finish attack. That's possible ? =" + possibleToFinishMove);
         if (possibleToFinishMove) {
             game.setBeaten(new ArrayList<>());
-            switchTurnsAtFinishAttack(game);
             refillCards(game);
+            switchTurnsAtFinishAttack(game);
             gameRepository.save(game);
             notifyPLayersAfterFinishAttack(game);
         }
@@ -269,12 +279,11 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer attackerWithRefilledCards = refillCardsToPlayer(game.getAttacker());
         OnlinePlayer defenderWithRefilledCards = refillCardsToPlayer(game.getDefender());
 
-        onlinePlayerRepository.save(attackerWithRefilledCards);
-        onlinePlayerRepository.save(defenderWithRefilledCards);
+//        onlinePlayerRepository.save(attackerWithRefilledCards);
+//        onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);
     }
 
-    //TODO test it
     private void nominateWinner(OnlinePlayer winner) {
         Game game = winner.getGame();
         Player playerWinner = winner.getPlayer();
@@ -297,6 +306,9 @@ public class GameServiceImpl implements GameService {
                 6 - onlinePlayer.getCards().size() :
                 moveValidator.getValidatedCountToDrawCards(onlinePlayer);
         List<Card> cards = cardService.drawCards(game, cardsToDraw);
+        if(cardsToDraw>0 && cards.isEmpty()){
+            log.warn("Expected to draw " + cardsToDraw + " cards but received none.");
+        }
         addCardsToPlayer(onlinePlayer, cards);
 
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
@@ -305,16 +317,20 @@ public class GameServiceImpl implements GameService {
 
 
     private OnlinePlayer saveEntities(OnlinePlayer onlinePlayer, Game game) {
-        onlinePlayerRepository.save(onlinePlayer);
+//        onlinePlayerRepository.save(onlinePlayer);
         gameRepository.save(game);
         return onlinePlayer;
     }
 
     private void addCardsToPlayer(OnlinePlayer onlinePlayer, List<Card> cards) {
+        if (cards.isEmpty()) {
+            log.info("No cards to add for onlinePlayerId: " + onlinePlayer.getId());
+            return;
+        }
         onlinePlayer.getCards().addAll(cards);
+        onlinePlayerRepository.save(onlinePlayer);
         cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));
         cardRepository.saveAll(cards);
-        onlinePlayerRepository.save(onlinePlayer);
     }
 
     private void switchTurnsAtFinishAttack(Game game) {
