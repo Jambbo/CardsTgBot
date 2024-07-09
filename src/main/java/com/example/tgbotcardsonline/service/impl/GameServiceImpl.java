@@ -1,7 +1,6 @@
 package com.example.tgbotcardsonline.service.impl;
 
 import com.example.tgbotcardsonline.model.Game;
-import com.example.tgbotcardsonline.model.enums.Value;
 import com.example.tgbotcardsonline.model.response.Card;
 import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
@@ -195,6 +194,17 @@ public class GameServiceImpl implements GameService {
             return;
         }
         telegramBot.updateAvailableCards(defender, defender.getCards());
+        checkOnFinishAttack(game);
+    }
+
+    private void checkOnFinishAttack(Game game) {
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        List<Card> attackerCards = attacker.getCards();
+        List<Card> defenderCards = defender.getCards();
+        if(attackerCards.isEmpty() || defenderCards.isEmpty()){
+            finishAttack(attacker.getPlayer(),game);
+        }
     }
 
     @Override
@@ -296,6 +306,9 @@ public class GameServiceImpl implements GameService {
                 6 - onlinePlayer.getCards().size() :
                 moveValidator.getValidatedCountToDrawCards(onlinePlayer);
         List<Card> cards = cardService.drawCards(game, cardsToDraw);
+        if(cardsToDraw>0 && cards.isEmpty()){
+            log.warn("Expected to draw " + cardsToDraw + " cards but received none.");
+        }
         addCardsToPlayer(onlinePlayer, cards);
 
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
@@ -310,6 +323,10 @@ public class GameServiceImpl implements GameService {
     }
 
     private void addCardsToPlayer(OnlinePlayer onlinePlayer, List<Card> cards) {
+        if (cards.isEmpty()) {
+            log.info("No cards to add for onlinePlayerId: " + onlinePlayer.getId());
+            return;
+        }
         onlinePlayer.getCards().addAll(cards);
         onlinePlayerRepository.save(onlinePlayer);
         cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));

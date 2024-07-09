@@ -28,8 +28,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 
 import java.util.List;
 
-import static java.util.Objects.isNull;
-
 @Slf4j
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
@@ -42,8 +40,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     public TelegramBot(
             @Value("${bot.token}") String botToken,
-            CardProcessor cardProcessor, PlayerService playerService,
-            ApplicationContext applicationContext, OnlinePlayerRepository onlinePlayerRepository
+            CardProcessor cardProcessor,
+            PlayerService playerService,
+            ApplicationContext applicationContext,
+            OnlinePlayerRepository onlinePlayerRepository
     ) {
         super(new DefaultBotOptions(), botToken);
         this.cardProcessor = cardProcessor;
@@ -79,7 +79,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         switch (messageText) {
             case "/start" -> sendMessageToPlayer(player, "Hi " + player.getUsername() + " let's play some durak!");
             case "\uD83D\uDCF1 My profile", "/myprofile" -> getMessageProcessor().handleMyProfileQuery(player);
-            case "/startgame", "\uD83C\uDFB2 Start random game" -> getSearchRequestService().StartLookForRandomGame(player);
+            case "/startgame", "\uD83C\uDFB2 Start random game" ->
+                    getSearchRequestService().StartLookForRandomGame(player);
             case "/help" -> getMessageProcessor().handleHelpQuery(player);
             default -> sendMessageToPlayer(player, messageText + "??");
         }
@@ -97,6 +98,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         execute(sendMessage);
     }
+
     @SneakyThrows
     @Async
     public void sendMessageToPlayer(Player player, String message, String parseMode) {
