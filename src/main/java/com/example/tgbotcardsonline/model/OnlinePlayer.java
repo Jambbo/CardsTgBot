@@ -41,7 +41,10 @@ public class OnlinePlayer {
     private List<Card> cards = new ArrayList<>();
 
     public void addCard(Card card) {
-        cards.add(card);
-        card.setOnlinePlayer(this);
+        if (!cards.contains(card)) {
+            cards.add(card);
+        } else {
+            System.out.println("Duplicate entry for cardId: " + card.getId() + " and onlinePlayerId: " + this.getId());
+        }
     }
 }

@@ -14,6 +14,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -27,6 +28,7 @@ import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScope
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -145,14 +147,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         Integer messageId = execute(message).getMessageId();
 
         onlinePlayer.setMessageId(messageId);
-
-        for (Card card : cards) {
-            if (!onlinePlayer.getCards().contains(card)) {
-                onlinePlayer.addCard(card);
-            } else {
-                log.warn("Duplicate card for onlinePlayerId: " + onlinePlayer.getId() + " and cardId: " + card.getId());
-            }
-        }
 
         onlinePlayerRepository.save(onlinePlayer);
     }

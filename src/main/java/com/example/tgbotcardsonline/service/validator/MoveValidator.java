@@ -61,6 +61,7 @@ public class MoveValidator {
         if (beatenCards.isEmpty()) {
             return true;
         }
+        //TODO return to get back new normal game logic
 //        return beatenCards.stream().anyMatch(c -> c.getValue().equals(playerMove.getValue()));
         return true;
     }
