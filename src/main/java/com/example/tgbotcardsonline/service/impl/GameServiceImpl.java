@@ -160,7 +160,8 @@ public class GameServiceImpl implements GameService {
 
         updateOnlinePlayerState(attacker, move);
 
-        telegramBot.sendMessageToBothPlayers(game, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(attackerPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(game.getDefender().getPlayer(), attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
         game.setActivePlayer(game.getDefender());
         game.setOffensiveCard(move);
         gameRepository.save(game);
@@ -178,7 +179,8 @@ public class GameServiceImpl implements GameService {
         Player defenderPlayer = defender.getPlayer();
 
         updateOnlinePlayerState(defender, move);
-        telegramBot.sendMessageToBothPlayers(game, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(defenderPlayer, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(game.getAttacker().getPlayer(), defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
 
         List<Card> beaten = game.getBeaten();
         beaten.add(game.getOffensiveCard());

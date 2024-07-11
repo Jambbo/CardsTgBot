@@ -14,7 +14,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -28,7 +27,6 @@ import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScope
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -112,29 +110,26 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         execute(sendMessage);
     }
+    @SneakyThrows
+    @Async
+    public void editMessageForPlayer(Player player, String message) {
+        Integer messageId = player.getPlayerInGame().getMessageId();
+        if(messageId!=null) {
+            EditMessageText editMessage = new EditMessageText();
+            editMessage.setChatId(player.getChatId());
+            editMessage.setMessageId(messageId);
+            editMessage.setText(message);
+            execute(editMessage);
+        }else{
+            sendMessageToPlayer(player,message);
+        }
+    }
 
     @SneakyThrows
     public void sendMessageToBothPlayers(Game game, String message) {
         sendMessageToPlayer(game.getAttacker().getPlayer(), message);
         sendMessageToPlayer(game.getDefender().getPlayer(), message);
     }
-
-//    @SneakyThrows
-//    public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
-//        Long chatId = onlinePlayer.getPlayer().getChatId();
-//
-//        SendMessage message = cardProcessor.createMessage(chatId);
-//        InlineKeyboardMarkup markup = cardProcessor.createMarkup(cards);
-//        message.setReplyMarkup(markup);
-//
-//        Integer messageId = execute(message).getMessageId();
-//
-//        onlinePlayer.setMessageId(messageId);
-//
-//
-//        onlinePlayerRepository.save(onlinePlayer);
-//
-//    }
 
     @SneakyThrows
     public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
