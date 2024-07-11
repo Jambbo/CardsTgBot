@@ -10,16 +10,16 @@ import com.example.tgbotcardsonline.repository.CardRepository;
 import com.example.tgbotcardsonline.repository.DeckResponseRepository;
 import com.example.tgbotcardsonline.repository.GameRepository;
 import com.example.tgbotcardsonline.service.CardService;
+import com.example.tgbotcardsonline.service.validator.MoveValidator;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +31,7 @@ public class CardServiceImpl implements CardService {
     private final TelegramBot telegramBot;
     private final GameRepository gameRepository;
     private final CardRepository cardRepository;
+    private final MoveValidator moveValidator;
 
     @Override
     public String brandNewDeck() {

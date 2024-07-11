@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 
@@ -35,7 +36,7 @@ public class MoveValidator {
     }
 
     public boolean isAttackMoveValid(Game game, Card playerMove) {
-            List<Card> beatenCards = game.getBeaten();
+        List<Card> beatenCards = game.getBeaten();
         OnlinePlayer defender = game.getDefender();
         int defenderCardCount = defender.getCards().size();
         int deckSize = game.getCards().size();
@@ -50,7 +51,7 @@ public class MoveValidator {
             return false;
         }
 
-        if (defenderCardCount<1) {
+        if (defenderCardCount < 1) {
             telegramBot.sendMessageToPlayer(
                     game.getAttacker().getPlayer(),
                     "Your opponent doesn't have cards. Finish attack."

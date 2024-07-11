@@ -1,6 +1,6 @@
 CREATE TABLE deck_response
 (
-    id        BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     success   BOOLEAN NOT NULL,
     deck_id   VARCHAR NOT NULL,
     shuffled  BOOLEAN NOT NULL,
@@ -8,36 +8,40 @@ CREATE TABLE deck_response
 );
 CREATE TABLE Player
 (
-    id                BIGSERIAL PRIMARY KEY,
-    chat_id           BIGINT    NOT NULL,
-    username          VARCHAR(255)       DEFAULT 'User',
-    player_in_game_id INT,
-    in_game           BOOLEAN   NOT NULL,
-    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id BIGSERIAL PRIMARY KEY,
+    chat_id              BIGINT    NOT NULL,
+    username             VARCHAR(255)       DEFAULT 'User',
+    player_in_game_id    INT,
+    in_game              BOOLEAN   NOT NULL,
+    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     player_statistics_id BIGINT
 );
 
 CREATE TABLE Game
 (
-    id                BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     deck_id           VARCHAR,
     attacker_id       INT,
     defender_id       INT,
     active_player_id  INT,
     trump             VARCHAR,
     offensive_card_id INT,
-    winner_id INT
+    winner_id         INT
 );
 
 CREATE TABLE online_player
 (
-    id        BIGSERIAL PRIMARY KEY,
-    player_id INT,
-    message_id INT
+    id BIGSERIAL PRIMARY KEY,
+    player_id               INT,
+    message_id              INT,
+    cards_message_id        INT,
+    beaten_cards_message_id INT,
+    message_id_now_move     INT,
+    message_to_opponent_id  INT
 );
 CREATE TABLE search_request
 (
-    id          BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     searcher_id INT,
     created_at  timestamp,
     game_type   VARCHAR
@@ -45,11 +49,11 @@ CREATE TABLE search_request
 
 CREATE TABLE card
 (
-    id    BIGSERIAL PRIMARY KEY,
-    code  VARCHAR,
-    image VARCHAR,
-    suit  VARCHAR,
-    value VARCHAR,
+    id BIGSERIAL PRIMARY KEY,
+    code    VARCHAR,
+    image   VARCHAR,
+    suit    VARCHAR,
+    value   VARCHAR,
     game_id INT
 );
 
@@ -89,7 +93,7 @@ CREATE TABLE game_cards
 CREATE TABLE Player_statistics
 (
     id BIGSERIAL PRIMARY KEY,
-    wins BIGINT DEFAULT 0,
-    games_played BIGINT DEFAULT 0,
-    win_rate DOUBLE PRECISION DEFAULT 0
+    wins         BIGINT           DEFAULT 0,
+    games_played BIGINT           DEFAULT 0,
+    win_rate     DOUBLE PRECISION DEFAULT 0
 )

@@ -24,6 +24,14 @@ public class OnlinePlayer {
     private Player player;
     @Column(name = "message_id")
     private Integer messageId;
+    @Column(name = "message_to_opponent_id")
+    private Integer messageIdSentToOpponent;
+    @Column(name = "cards_message_id")
+    private Integer cardsMessageId;
+    @Column(name = "beaten_cards_message_id")
+    private Integer beatenCardsMessageId;
+    @Column(name = "message_id_now_move")
+    private Integer messageIdNowMove;
     @ManyToOne
     @JoinTable(
             name = "game_players",

@@ -5,11 +5,13 @@ import com.example.tgbotcardsonline.model.OnlinePlayer;
 import com.example.tgbotcardsonline.model.Player;
 import com.example.tgbotcardsonline.model.SearchRequest;
 import com.example.tgbotcardsonline.model.enums.Suit;
+import com.example.tgbotcardsonline.repository.OnlinePlayerRepository;
 import com.example.tgbotcardsonline.repository.SearchRequestRepository;
 import com.example.tgbotcardsonline.service.GameService;
 import com.example.tgbotcardsonline.service.SearchRequestService;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class SearchRequestImpl implements SearchRequestService {
+    private final OnlinePlayerRepository onlinePlayerRepository;
     private final SearchRequestRepository searchRequestRepository;
     private final GameService gameService;
     private final TelegramBot telegramBot;
@@ -43,6 +46,7 @@ public class SearchRequestImpl implements SearchRequestService {
             telegramBot.sendMessageToPlayer(player, "looking for a game!");
         } else {
             Player opponent = searchRequest.get().getSearcher();
+            // TODO RETURN
 //            if (player.getId().equals(opponent.getId())) {
 //                telegramBot.sendMessageToPlayer(player, "You already looking for  a game");
 //                return;
@@ -71,18 +75,29 @@ public class SearchRequestImpl implements SearchRequestService {
         contactToTelegramBotToSendMessage(game, trump, suitSymbol, firstAttacker, firstDefender);
     }
 
+    @SneakyThrows
     private void contactToTelegramBotToSendMessage(Game game, Suit trump, String suitSymbol, Player firstAttacker, Player firstDefender) {
+
+        OnlinePlayer attackerOnlinePlayer = firstAttacker.getPlayerInGame();
+        OnlinePlayer defenderOnlinePlayer = firstDefender.getPlayerInGame();
 
         String gameFoundMessagePlayer = String.format("Game found! You are playing against [%s](tg://user?id=%d)", firstDefender.getUsername(), firstDefender.getChatId());
         String gameFoundMessageOpponent = String.format("Game found! You are playing against [%s](tg://user?id=%d)", firstAttacker.getUsername(), firstAttacker.getChatId());
 
         telegramBot.sendMessageToBothPlayers(game, "Trump is: " + trump + " " + suitSymbol);
-        telegramBot.sendMessageToPlayer(firstAttacker, gameFoundMessagePlayer,"Markdown");
-        telegramBot.sendMessageToPlayer(firstDefender, gameFoundMessageOpponent,"Markdown");
+        telegramBot.sendMessageToPlayer(firstAttacker, gameFoundMessagePlayer, "Markdown");
+        telegramBot.sendMessageToPlayer(firstDefender, gameFoundMessageOpponent, "Markdown");
         telegramBot.showAvailableCards(firstAttacker.getPlayerInGame(), firstAttacker.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(firstDefender.getPlayerInGame(), firstDefender.getPlayerInGame().getCards());
-        telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!");
-        telegramBot.sendMessageToPlayer(firstDefender, "Now is " + firstAttacker.getUsername() + " turn");
+
+        Integer messageId = telegramBot.sendMessageToPlayer(firstAttacker, "Now is your turn!").get();
+        Integer secondMessageId = telegramBot.sendMessageToPlayer(firstDefender, "Now is " + firstAttacker.getUsername() + " turn").get();
+
+        attackerOnlinePlayer.setMessageIdNowMove(messageId);
+        defenderOnlinePlayer.setMessageIdNowMove(secondMessageId);
+
+        onlinePlayerRepository.save(attackerOnlinePlayer);
+        onlinePlayerRepository.save(defenderOnlinePlayer);
     }
 
 }
