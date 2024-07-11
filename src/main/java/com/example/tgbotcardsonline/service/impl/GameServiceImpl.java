@@ -160,7 +160,8 @@ public class GameServiceImpl implements GameService {
 
         updateOnlinePlayerState(attacker, move);
 
-        telegramBot.sendMessageToBothPlayers(game, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(attackerPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(game.getDefender().getPlayer(), attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
         game.setActivePlayer(game.getDefender());
         game.setOffensiveCard(move);
         gameRepository.save(game);
@@ -178,7 +179,8 @@ public class GameServiceImpl implements GameService {
         Player defenderPlayer = defender.getPlayer();
 
         updateOnlinePlayerState(defender, move);
-        telegramBot.sendMessageToBothPlayers(game, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(defenderPlayer, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
+        telegramBot.editMessageForPlayer(game.getAttacker().getPlayer(), defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
 
         List<Card> beaten = game.getBeaten();
         beaten.add(game.getOffensiveCard());
@@ -275,12 +277,9 @@ public class GameServiceImpl implements GameService {
     }
 
     private void refillCards(Game game) {
+        refillCardsToPlayer(game.getAttacker());
+        refillCardsToPlayer(game.getDefender());
 
-        OnlinePlayer attackerWithRefilledCards = refillCardsToPlayer(game.getAttacker());
-        OnlinePlayer defenderWithRefilledCards = refillCardsToPlayer(game.getDefender());
-
-//        onlinePlayerRepository.save(attackerWithRefilledCards);
-//        onlinePlayerRepository.save(defenderWithRefilledCards);
         gameRepository.save(game);
     }
 
@@ -296,11 +295,13 @@ public class GameServiceImpl implements GameService {
         telegramBot.sendMessageToPlayer(loserPlayer, playerWinner.getUsername() + " - won!");
     }
 
-    private OnlinePlayer refillCardsToPlayer(OnlinePlayer onlinePlayer) {
+    private void refillCardsToPlayer(OnlinePlayer onlinePlayer) {
         Game game = onlinePlayer.getGame();
         if (!moveValidator.isCardNeeded(onlinePlayer)) {
-            log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
-            return saveEntities(onlinePlayer, game);
+            log.info(
+                    onlinePlayer.getPlayer().getUsername() +  " doesn't need any cards "
+            );
+            return;
         }
         int cardsToDraw = moveValidator.isPossibleToDrawCards(onlinePlayer) ?
                 6 - onlinePlayer.getCards().size() :
@@ -312,15 +313,10 @@ public class GameServiceImpl implements GameService {
         addCardsToPlayer(onlinePlayer, cards);
 
         log.info(onlinePlayer.getPlayer().getUsername() + "cards:  " + onlinePlayer.getCards());
-        return saveEntities(onlinePlayer, game);
-    }
 
-
-    private OnlinePlayer saveEntities(OnlinePlayer onlinePlayer, Game game) {
-//        onlinePlayerRepository.save(onlinePlayer);
         gameRepository.save(game);
-        return onlinePlayer;
     }
+
 
     private void addCardsToPlayer(OnlinePlayer onlinePlayer, List<Card> cards) {
         if (cards.isEmpty()) {
@@ -328,9 +324,9 @@ public class GameServiceImpl implements GameService {
             return;
         }
         onlinePlayer.getCards().addAll(cards);
-        onlinePlayerRepository.save(onlinePlayer);
-        cards.forEach(c -> c.setOnlinePlayer(onlinePlayer));
         cardRepository.saveAll(cards);
+//        onlinePlayerRepository.save(onlinePlayer);
+//        onlinePlayerRepository.save(onlinePlayer);
     }
 
     private void switchTurnsAtFinishAttack(Game game) {
@@ -349,7 +345,6 @@ public class GameServiceImpl implements GameService {
         if (player.getCards().remove(move)) {
             log.info("Deleted card " + move + " from player with id: " + player.getId());
             Card card = cardService.getInputtedCardByCodeAndGame(player, move.getCode());
-            card.setOnlinePlayer(null);
             savePlayerAndCardAndGameToDb(player, card, game);
             log.info("cards players: ");
             player.getCards().forEach(

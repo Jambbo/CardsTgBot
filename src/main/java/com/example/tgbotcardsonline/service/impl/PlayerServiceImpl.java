@@ -6,11 +6,15 @@ import com.example.tgbotcardsonline.repository.PlayerRepository;
 import com.example.tgbotcardsonline.repository.PlayerStatisticsRepository;
 import com.example.tgbotcardsonline.service.PlayerService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
+import static java.util.Objects.isNull;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PlayerServiceImpl implements PlayerService {
     private final PlayerRepository playerRepository;
     private final PlayerStatisticsRepository playerStatisticsRepository;

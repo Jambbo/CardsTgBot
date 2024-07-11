@@ -33,10 +33,7 @@ public class OnlinePlayerServiceImpl implements OnlinePlayerService {
         List<Card> newCards = drawCardsResponse.getCards().stream().map(
                 card -> cardMapper.toCardFromStringCode(card.getCode())
         ).toList();
-        newCards.forEach(card -> {
-            card.setOnlinePlayer(onlinePlayer);
-            onlinePlayer.addCard(card);
-        });
+        newCards.forEach(onlinePlayer::addCard);
         saveCardsAndPlayerToDb(newCards, onlinePlayer);
         return onlinePlayer;
     }

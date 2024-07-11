@@ -110,29 +110,26 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         execute(sendMessage);
     }
+    @SneakyThrows
+    @Async
+    public void editMessageForPlayer(Player player, String message) {
+        Integer messageId = player.getPlayerInGame().getMessageId();
+        if(messageId!=null) {
+            EditMessageText editMessage = new EditMessageText();
+            editMessage.setChatId(player.getChatId());
+            editMessage.setMessageId(messageId);
+            editMessage.setText(message);
+            execute(editMessage);
+        }else{
+            sendMessageToPlayer(player,message);
+        }
+    }
 
     @SneakyThrows
     public void sendMessageToBothPlayers(Game game, String message) {
         sendMessageToPlayer(game.getAttacker().getPlayer(), message);
         sendMessageToPlayer(game.getDefender().getPlayer(), message);
     }
-
-//    @SneakyThrows
-//    public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
-//        Long chatId = onlinePlayer.getPlayer().getChatId();
-//
-//        SendMessage message = cardProcessor.createMessage(chatId);
-//        InlineKeyboardMarkup markup = cardProcessor.createMarkup(cards);
-//        message.setReplyMarkup(markup);
-//
-//        Integer messageId = execute(message).getMessageId();
-//
-//        onlinePlayer.setMessageId(messageId);
-//
-//
-//        onlinePlayerRepository.save(onlinePlayer);
-//
-//    }
 
     @SneakyThrows
     public void showAvailableCards(OnlinePlayer onlinePlayer, List<Card> cards) {
@@ -145,14 +142,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         Integer messageId = execute(message).getMessageId();
 
         onlinePlayer.setMessageId(messageId);
-
-        for (Card card : cards) {
-            if (!onlinePlayer.getCards().contains(card)) {
-                onlinePlayer.addCard(card);
-            } else {
-                log.warn("Duplicate card for onlinePlayerId: " + onlinePlayer.getId() + " and cardId: " + card.getId());
-            }
-        }
 
         onlinePlayerRepository.save(onlinePlayer);
     }

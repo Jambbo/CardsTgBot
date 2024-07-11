@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @ToString
 @Entity
 @Builder
+@EqualsAndHashCode
 @Table(name = "card")
 public class Card {
     @Id
@@ -40,13 +41,6 @@ public class Card {
         this.suit = suit;
         this.value = value;
     }
-    @ManyToOne
-    @JoinTable(
-            name = "op_cards",
-            joinColumns =@JoinColumn(name = "card_id"),
-            inverseJoinColumns = @JoinColumn(name = "online_player_id")
-    )
-    public OnlinePlayer onlinePlayer;
 
     @Column(name = "game_id")
     private Long gameId;
