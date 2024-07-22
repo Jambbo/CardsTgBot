@@ -31,7 +31,6 @@ public class CardServiceImpl implements CardService {
     private final TelegramBot telegramBot;
     private final GameRepository gameRepository;
     private final CardRepository cardRepository;
-    private final MoveValidator moveValidator;
 
     @Override
     public String brandNewDeck() {

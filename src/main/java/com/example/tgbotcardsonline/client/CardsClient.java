@@ -19,7 +19,6 @@ import java.net.URI;
 import java.util.*;
 
 @Component
-//@RequiredArgsConstructor
 @Slf4j
 public class CardsClient {
     private Queue<String> deck;
