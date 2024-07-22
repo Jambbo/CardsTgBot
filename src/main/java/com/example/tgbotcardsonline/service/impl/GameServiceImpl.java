@@ -14,11 +14,13 @@ import com.example.tgbotcardsonline.service.processors.WinProcessor;
 import com.example.tgbotcardsonline.service.validator.MoveValidator;
 import com.example.tgbotcardsonline.tg.TelegramBot;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,8 +57,8 @@ public class GameServiceImpl implements GameService {
         Suit trump = card.getSuit();
         OnlinePlayer firstAttacker = countWhoAttackFirst(player1, player2, trump);
         OnlinePlayer defender = firstAttacker.equals(player1) ? player2 : player1;
-        telegramBot.sendMessageToPlayer(player1.getPlayer(),"Trump card is:  "+moveValidator.getPrettyMove(card));
-        telegramBot.sendMessageToPlayer(player2.getPlayer(),"Trump card is:  "+moveValidator.getPrettyMove(card));
+        telegramBot.sendMessageToPlayer(player1.getPlayer(), "Trump card is:  " + moveValidator.getPrettyMove(card));
+        telegramBot.sendMessageToPlayer(player2.getPlayer(), "Trump card is:  " + moveValidator.getPrettyMove(card));
         return Game.builder()
                 .deckId(deckId)
                 .trump(trump)
@@ -154,14 +156,18 @@ public class GameServiceImpl implements GameService {
 
 
     @Override
+    @SneakyThrows
     public void attackMove(Game game, Card move) {
         OnlinePlayer attacker = game.getAttacker();
         Player attackerPlayer = attacker.getPlayer();
 
+        Integer messageIdForOpponent = telegramBot.sendMessageToPlayer(game.getDefender().getPlayer(), attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move)).get();
+        Integer messageId = telegramBot.sendMessageToPlayer(attackerPlayer, "You attacked: " + moveValidator.getPrettyMove(move)).get();
+
+        attacker.setMessageId(messageId);
+        attacker.setMessageIdSentToOpponent(messageIdForOpponent);
         updateOnlinePlayerState(attacker, move);
 
-        telegramBot.editMessageForPlayer(attackerPlayer, attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
-        telegramBot.editMessageForPlayer(game.getDefender().getPlayer(), attackerPlayer.getUsername() + " attacked: " + moveValidator.getPrettyMove(move));
         game.setActivePlayer(game.getDefender());
         game.setOffensiveCard(move);
         gameRepository.save(game);
@@ -171,16 +177,21 @@ public class GameServiceImpl implements GameService {
             return;
         }
         telegramBot.updateAvailableCards(attacker, attacker.getCards());
+        telegramBot.updateNowMoveMessages(game);
     }
 
     @Override
+    @SneakyThrows
     public void defenceMove(Game game, Card move) {
         OnlinePlayer defender = game.getDefender();
         Player defenderPlayer = defender.getPlayer();
 
+        Integer messageIdForOpponent = telegramBot.sendMessageToPlayer(game.getAttacker().getPlayer(), defenderPlayer.getUsername() + " defended with: " + moveValidator.getPrettyMove(move)).get();
+        Integer messageId = telegramBot.sendMessageToPlayer(defenderPlayer, "You defended with: " + moveValidator.getPrettyMove(move)).get();
+
+        defender.setMessageId(messageId);
+        defender.setMessageIdSentToOpponent(messageIdForOpponent);
         updateOnlinePlayerState(defender, move);
-        telegramBot.editMessageForPlayer(defenderPlayer, defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
-        telegramBot.editMessageForPlayer(game.getAttacker().getPlayer(), defenderPlayer.getUsername() + " defended: " + moveValidator.getPrettyMove(move));
 
         List<Card> beaten = game.getBeaten();
         beaten.add(game.getOffensiveCard());
@@ -196,6 +207,8 @@ public class GameServiceImpl implements GameService {
             return;
         }
         telegramBot.updateAvailableCards(defender, defender.getCards());
+        telegramBot.updateBeatenCardsMessages(game);
+        telegramBot.updateNowMoveMessages(game);
         checkOnFinishAttack(game);
     }
 
@@ -204,8 +217,8 @@ public class GameServiceImpl implements GameService {
         OnlinePlayer defender = game.getDefender();
         List<Card> attackerCards = attacker.getCards();
         List<Card> defenderCards = defender.getCards();
-        if(attackerCards.isEmpty() || defenderCards.isEmpty()){
-            finishAttack(attacker.getPlayer(),game);
+        if (attackerCards.isEmpty() || defenderCards.isEmpty()) {
+            finishAttack(attacker.getPlayer(), game);
         }
     }
 
@@ -238,11 +251,18 @@ public class GameServiceImpl implements GameService {
     }
 
     private void updateStateForTakingCards(Game game, OnlinePlayer playerInGame) {
-        game.setActivePlayer(game.getAttacker());
+        OnlinePlayer attacker = game.getAttacker();
+        OnlinePlayer defender = game.getDefender();
+        attacker.setMessageIdNowMove(null);
+        attacker.setBeatenCardsMessageId(null);
+        defender.setMessageIdNowMove(null);
+        defender.setBeatenCardsMessageId(null);
+        game.setActivePlayer(attacker);
         game.setOffensiveCard(null);
         game.setBeaten(new ArrayList<>());
         refillCards(game);
-        onlinePlayerRepository.save(playerInGame);
+        onlinePlayerRepository.save(attacker);
+        onlinePlayerRepository.save(defender);
         gameRepository.save(game);
     }
 
@@ -255,11 +275,12 @@ public class GameServiceImpl implements GameService {
         log.info("notify players...");
 
         telegramBot.sendMessageToBothPlayers(game, defender.getUsername() + " takes the cards!");
-        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move");
+//        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
         telegramBot.showAvailableCards(attacker.getPlayerInGame(), attacker.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(defender.getPlayerInGame(), defender.getPlayerInGame().getCards());
+        telegramBot.updateNowMoveMessages(game);
     }
 
     private void notifyPLayersAfterFinishAttack(Game game) {
@@ -269,11 +290,12 @@ public class GameServiceImpl implements GameService {
         log.info("notify players...");
 
         telegramBot.sendMessageToBothPlayers(game, "Cards beaten and " + attacker.getUsername() + " successfully defended!");
-        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
+//        telegramBot.sendMessageToBothPlayers(game, "Now is " + attacker.getUsername() + " move ");
         telegramBot.sendMessageToBothPlayers(game, "Remaining cards in the deck: " + game.getCards().size() + "!");
 
         telegramBot.showAvailableCards(attacker.getPlayerInGame(), attacker.getPlayerInGame().getCards());
         telegramBot.showAvailableCards(defender.getPlayerInGame(), defender.getPlayerInGame().getCards());
+        telegramBot.updateNowMoveMessages(game);
     }
 
     private void refillCards(Game game) {
@@ -299,7 +321,7 @@ public class GameServiceImpl implements GameService {
         Game game = onlinePlayer.getGame();
         if (!moveValidator.isCardNeeded(onlinePlayer)) {
             log.info(
-                    onlinePlayer.getPlayer().getUsername() +  " doesn't need any cards "
+                    onlinePlayer.getPlayer().getUsername() + " doesn't need any cards "
             );
             return;
         }
@@ -307,7 +329,7 @@ public class GameServiceImpl implements GameService {
                 6 - onlinePlayer.getCards().size() :
                 moveValidator.getValidatedCountToDrawCards(onlinePlayer);
         List<Card> cards = cardService.drawCards(game, cardsToDraw);
-        if(cardsToDraw>0 && cards.isEmpty()){
+        if (cardsToDraw > 0 && cards.isEmpty()) {
             log.warn("Expected to draw " + cardsToDraw + " cards but received none.");
         }
         addCardsToPlayer(onlinePlayer, cards);
@@ -332,11 +354,20 @@ public class GameServiceImpl implements GameService {
     private void switchTurnsAtFinishAttack(Game game) {
         OnlinePlayer attacker = game.getAttacker();
         OnlinePlayer defender = game.getDefender();
+
+        attacker.setMessageIdNowMove(null);
+        attacker.setBeatenCardsMessageId(null);
+
+        defender.setMessageIdNowMove(null);
+        defender.setBeatenCardsMessageId(null);
+
         game.setActivePlayer(defender);
         game.setAttacker(defender);
         game.setDefender(attacker);
         log.info("last attacker was : " + attacker);
         log.info("new attacker is: " + defender);
+        onlinePlayerRepository.save(attacker);
+        onlinePlayerRepository.save(defender);
         gameRepository.save(game);
     }
 

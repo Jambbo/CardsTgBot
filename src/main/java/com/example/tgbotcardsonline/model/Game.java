@@ -1,11 +1,14 @@
 package com.example.tgbotcardsonline.model;
 
+import com.example.tgbotcardsonline.client.CardsClient;
 import com.example.tgbotcardsonline.model.enums.Suit;
 import com.example.tgbotcardsonline.model.response.Card;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Entity
 @AllArgsConstructor

@@ -16,4 +16,5 @@ public interface CardService {
     List<Card> drawCards(Game game, int howMany);
 
     Card getInputtedCardByCodeAndGame(OnlinePlayer onlinePlayer, String callBackData);
+
 }
