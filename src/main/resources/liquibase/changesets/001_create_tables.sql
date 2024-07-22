@@ -61,9 +61,9 @@ CREATE TABLE op_cards
 (
     online_player_id BIGINT,
     card_id          BIGINT,
-    PRIMARY KEY (online_player_id, card_id),
-    CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (online_player_id) REFERENCES online_player (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
+    PRIMARY KEY (online_player_id, card_id)
+--     CONSTRAINT fk_op_cards_online_player_id FOREIGN KEY (online_player_id) REFERENCES online_player (id) ON DELETE CASCADE ON UPDATE NO ACTION,
+--     CONSTRAINT fk_op_cards_card_id FOREIGN KEY (card_id) REFERENCES card (id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
 
 CREATE TABLE game_players

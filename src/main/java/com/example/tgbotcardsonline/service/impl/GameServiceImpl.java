@@ -245,12 +245,12 @@ public class GameServiceImpl implements GameService {
         if (possibleToTakeCards) {
             playersCards.addAll(beaten);
             playersCards.add(game.getOffensiveCard());
-            updateStateForTakingCards(game, playerInGame);
+            updateStateForTakingCards(game);
             notifyPlayersAfterTakeCards(game);
         } else telegramBot.sendMessageToPlayer(player, "You'r not able to take cards as you'r attacker");
     }
 
-    private void updateStateForTakingCards(Game game, OnlinePlayer playerInGame) {
+    private void updateStateForTakingCards(Game game) {
         OnlinePlayer attacker = game.getAttacker();
         OnlinePlayer defender = game.getDefender();
         attacker.setMessageIdNowMove(null);
@@ -346,9 +346,6 @@ public class GameServiceImpl implements GameService {
             return;
         }
         onlinePlayer.getCards().addAll(cards);
-        cardRepository.saveAll(cards);
-//        onlinePlayerRepository.save(onlinePlayer);
-//        onlinePlayerRepository.save(onlinePlayer);
     }
 
     private void switchTurnsAtFinishAttack(Game game) {
